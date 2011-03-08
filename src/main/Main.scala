@@ -1,3 +1,5 @@
+package main
+
 import java.io.FileReader
 import org.catalogueoflife.e2.schema.parse.SchemaParser
 import org.catalogueoflife.e2.schema.parse.ERGraph
