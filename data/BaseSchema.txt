@@ -2,9 +2,9 @@ name BaseSchema
 namespace org.catalogueoflife.e2.schema.BaseSchema
 
 entity AuthorString(s) {
-       -- Name of author(s), who described the taxon
-	   -- or published the current combination and the year when appropriate.
-	   = string : String[:255]
+	-- Name of author(s), who described the taxon
+	-- or published the current combination and the year when appropriate.
+	= string : String[:255]
 }
 
 // commonName has a unique relation over all its relations, how to represent?
@@ -22,16 +22,17 @@ relate {CommonName *<? Country}
 relate {CommonName *<? Language}
 
 entity CommonNameElement(s) {
-	   name : String[:255],
-	   -- Transcription of name in foreign alphabet into English
-	   ? transliteration : String[:255]
+	name : String[:255],
+	-- Transcription of name in foreign alphabet into English
+	? transliteration : String[:255]
 }
 
 entity Country/Countries {
-	   -- ISO 3166-1-Alpha-2 code
-	   = iso : String[2],
-	   -- Country
-	   = name : String[:100]
+	
+	-- ISO 3166-1-Alpha-2 code
+	= iso : String[2],
+	-- Country
+	= name : String[:100]
 }
 
 // Distribution is actually a relation linking a
@@ -55,32 +56,32 @@ relate DistributionFreeText(s) {
 
 // Predetermined list of distribution statuses
 entity DistributionStatus(es) {  //[:255] {
-	   -- Distribution status (common, rare, etc.)
-	   = status : String[:100]
+	-- Distribution status (common, rare, etc.)
+	= status : String[:100]
 }
 
 entity Habitat(s)[:65535] {
-	   originalCode : String[:25],
-	   name : String[:255]
+	originalCode : String[:25],
+	name : String[:255]
 }
 
 relate {
-	   Habitat *<1 HabitatStandard
+	Habitat *<1 HabitatStandard
 }
 
 // the base schema defines field standard as unique, preventing multiple
 // versions of a standard being used. It should be both fields, but the
 // optionality makes this difficult
 entity HabitatStandard(s)[:255] {
-	   = standard : String[:50],
-	   ? version : String[:10]
+	= standard : String[:50],
+	? version : String[:10]
 }
 
 //values {
-//	   HabitatStandard standard = 'IUCN Habitats', version = '2.1' {
-//	     Habitat = '1','Forest';
-//	     Habitat = '1.1','Boreal';
-//	     Habitat = '1.2','Subarctic';
+//	HabitatStandard standard = 'IUCN Habitats', version = '2.1' {
+//	  Habitat = '1','Forest';
+//	  Habitat = '1.1','Boreal';
+//	  Habitat = '1.2','Subarctic';
  //      }
 //}
 
@@ -93,25 +94,25 @@ relate habitat_to_taxon_detail {Habitat *>* TaxonDetail}
 // this could be created as a table Hybrid mapping the taxa, but for such a
 // small number it could also be parentTaxon1, parentTaxon2, parentTaxon3?
 relate Hybrid(s) {
-	   Taxon *<* parentTaxon/parentTaxa : Taxon
+	Taxon *<* parentTaxon/parentTaxa : Taxon
 }
 
 entity Language(s) {
-	   -- ISO 639-2 Alpha-3 code
-	   = iso : String[3],
-	   -- Language
-	   name : String[:100]
+	-- ISO 639-2 Alpha-3 code
+	= iso : String[3],
+	-- Language
+	name : String[:100]
 }
 
 entity Reference(s) {
-	   -- Complete author string
-	   ? authors : String[:255],
-	   -- Year(s) of publication
-	   ? year : String[:25],
-	   -- Title of the publication
-	   ? title : String[:255],
-	   -- Additional information pertaining to the publication
-	   ? text : String[:65535]
+	-- Complete author string
+	? authors : String[:255],
+	-- Year(s) of publication
+	? year : String[:25],
+	-- Title of the publication
+	? title : String[:255],
+	-- Additional information pertaining to the publication
+	? text : String[:65535]
 }
 
 relate reference_to_common_name {Reference *>* CommonName}
@@ -122,90 +123,90 @@ relate {Reference *<? Uri}
 // *-1 or *-? relations can be stored as fields if we define a name
 // for type (no need to define plural for field as it is on the 1 side
 entity Region(s)[:65535] {
-	   //regionStandard : RegionStandard,
-	   -- Original ID or code of the region in the standard referenced
-	   -- in region_standard_id
-	   originalCode : String[:25],
-	   -- Region
-	   name : String[:255]
+	//regionStandard : RegionStandard,
+	-- Original ID or code of the region in the standard referenced
+	-- in region_standard_id
+	originalCode : String[:25],
+	-- Region
+	name : String[:255]
 }
 relate {
-	   Region *<1 RegionStandard
+	Region *<1 RegionStandard
 }
 // this implies that
 //relate { Region *-1 name : String }
 // don't need this now
 //relate {
-//	   Region *-1 RegionStandard regionStandard
+//	Region *-1 RegionStandard regionStandard
 //}
 
 relate {
-	   child(ren) : Region *-? parent : Region
+	child(ren) : Region *-? parent : Region
 }
 
 entity RegionFreeText(s) {
-	   -- Free text description of distribution;
-	   -- provided mainly to store full text descriptions from the 
-	   -- Annual Checklist
-	   freeText : String[:12500]
+	-- Free text description of distribution;
+	-- provided mainly to store full text descriptions from the 
+	-- Annual Checklist
+	freeText : String[:12500]
 }
 
 // in the Schema, standard is unique, suggesting that it is not possible
 // to use multiple versions of the same standard
 entity RegionStandard(s)[:255] {
-	   -- Standard used to describe the region
-	   = standard : String[:50],
-	   -- Version of the standard used
-	   ? version : String[:10]
+	-- Standard used to describe the region
+	= standard : String[:50],
+	-- Version of the standard used
+	? version : String[:10]
 }
 
 // Individual elements used to generate a scientific name
 entity ScientificNameElement(s) {
-	   -- Basic element of a scientific name; e.g. the epithet argentatus
-	   -- as used in Larus argentatus argenteus
-	   = nameElement : String[:100]
+	-- Basic element of a scientific name; e.g. the epithet argentatus
+	-- as used in Larus argentatus argenteus
+	= nameElement : String[:100]
 }
 
 entity ScientificNameStatus(es)[:99] {
-	   -- Name status of a taxon
-	   = nameStatus : String[:50]
+	-- Name status of a taxon
+	= nameStatus : String[:50]
 }
 
 entity Scrutiny/Scrutinies {
-	   -- Most recent date a taxon name was verified; must parse correctly
-	   ? scrutinyDate : Date,
-	   -- Date as used in the original database; may be incomplete
-	   ? originalScrutinyDate : String[:100]
+	-- Most recent date a taxon name was verified; must parse correctly
+	? scrutinyDate : Date,
+	-- Date as used in the original database; may be incomplete
+	? originalScrutinyDate : String[:100]
 }
 
 relate {Scrutiny *-1 Specialist}
 entity SourceDatabase(s) {
-	   -- Full name of the source database
-	   name : String[:255],
-	   ? abbreviatedName : String[:50],
-	   -- Name in English of the group(s) treated in the database
-	   ? groupNameInEnglish : String[:255],
-	   -- Optional author(s) and editor(s) of the source database
-	   ? authorsAndEditors : String[:255],
-	   -- Optional organisation which has compiled or 
-	   -- is owning the source database
-	   ? organisation : String[:255],
-	   -- Optional contact person of the source database
-	   ? contactPerson : String[:255],
-	   -- Optional version number of the source database
-	   ? version : String[:25],
-	   -- Optional most recent release date of the source database
-	   ? releaseDate : Date,
-	   -- Optional free text field describing the source database
-	   ? abstract : String[:65535]
+	-- Full name of the source database
+	name : String[:255],
+	? abbreviatedName : String[:50],
+	-- Name in English of the group(s) treated in the database
+	? groupNameInEnglish : String[:255],
+	-- Optional author(s) and editor(s) of the source database
+	? authorsAndEditors : String[:255],
+	-- Optional organisation which has compiled or 
+	-- is owning the source database
+	? organisation : String[:255],
+	-- Optional contact person of the source database
+	? contactPerson : String[:255],
+	-- Optional version number of the source database
+	? version : String[:25],
+	-- Optional most recent release date of the source database
+	? releaseDate : Date,
+	-- Optional free text field describing the source database
+	? abstract : String[:65535]
 }
 
 entity Specialist(s) {
-	   = name : String[:100]
+	= name : String[:100]
 }
 
 entity Synonym(s) {
-	   ? originalId : String[:100]
+	? originalId : String[:100]
 }
 
 relate {Synonym *<? AuthorString}
@@ -223,7 +224,7 @@ relate SynonymNameElement(s) {
 //relate {SynonymNameElement *>1 Synonym}
 
 entity Taxon/Taxa {
-	   ? originalId : String[:100]
+	? originalId : String[:100]
 }
 
 relate {SourceDatabase ?-* Taxon}
@@ -238,8 +239,8 @@ relate {Synonym *>1 Taxon}
 // General rule: reference to id in another table can 1-? or 1-* - if it
 // has a unique constraint, it must be 1-?
 entity TaxonDetail(s) {
-	   -- Optional free text field describing the taxon
-	   additionalData : String[:65535]
+	-- Optional free text field describing the taxon
+	additionalData : String[:65535]
 }
 relate {TaxonDetail ?>1 Taxon}
 relate {TaxonDetail *<? AuthorString}
@@ -252,7 +253,7 @@ relate {TaxonDetail *<? Scrutiny}
 // taxon present, it is not possible to store a species with no genus since
 // the genus name element would not have a taxon to link to.
 entity TaxonNameElement(s) {
-	   //= taxon : Taxon
+	//= taxon : Taxon
 }
 relate {TaxonNameElement 1<1 Taxon} // this seems backwards, but required to make it look like Base Schema
 relate {TaxonNameElement *<1 ScientificNameElement}
@@ -261,25 +262,25 @@ relate {TaxonNameElement *<1 ScientificNameElement}
 relate {child(ren):TaxonNameElement *-? parent:Taxon}
 
 entity TaxonomicRank(s)[:255] {
-	   -- Taxonomic rank (e.g. family, subspecies)
-	   rank : String[:50],
-	   ? markerDisplayed : String[:50],
-	   standard : Integer[0..9]// = 0
+	-- Taxonomic rank (e.g. family, subspecies)
+	rank : String[:50],
+	? markerDisplayed : String[:50],
+	standard : Integer[0..9]// = 0
 }
 
 entity Uri(s) {
-	   -- Unique resource identifier (URI; including LSID)
-	   resourceIdentifier : String[:500],
-	   -- Short description of the URI
-	   ? description : String[:65535]
+	-- Unique resource identifier (URI; including LSID)
+	resourceIdentifier : String[:500],
+	-- Short description of the URI
+	? description : String[:65535]
 }
 
 relate {Uri *<1 UriScheme}
 entity UriScheme[:99] {
-	   -- Abbreviation of URI scheme
-	   scheme : String[:25],
-	   -- Full name of URI scheme
-	   name : String[:255]
+	-- Abbreviation of URI scheme
+	scheme : String[:25],
+	-- Full name of URI scheme
+	name : String[:255]
 }
 
 relate uri_to_source_database {Uri *>* SourceDatabase}
