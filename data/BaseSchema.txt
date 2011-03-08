@@ -28,9 +28,9 @@ entity CommonNameElement(s) {
 }
 
 entity Country/Countries {
-	
-	-- ISO 3166-1-Alpha-2 code
-	= iso : String[2],
+	standard: Boolean,
+	-- ISO 3166-1-Alpha-3 code
+	= iso : String[3],
 	-- Country
 	= name : String[:100]
 }
@@ -98,6 +98,7 @@ relate Hybrid(s) {
 }
 
 entity Language(s) {
+	standard: Boolean,
 	-- ISO 639-2 Alpha-3 code
 	= iso : String[3],
 	-- Language
@@ -231,6 +232,14 @@ relate {SourceDatabase ?-* Taxon}
 relate {TaxonomicRank 1>* Taxon}
 relate {CommonName *>1 Taxon}
 relate {Synonym *>1 Taxon}
+
+entity TaxonomicCoverage {
+	sector: Integer[0..100], // % coverage provided for a taxon
+	pointOfAttachment: Integer[0..10] = 0
+}
+
+relate {Taxon 1<* TaxonomicCoverage}
+relate {SourceDatabase 1>* TaxonomicCoverage}
 
 // hmm, this would initially suggest that a Taxon can have multiple
 // TaxonDetails, but since the Taxon is a unique key, it is actually
