@@ -1,0 +1,305 @@
+name BaseSchema
+namespace org.catalogueoflife.e2.schema.BaseSchema
+
+entity AuthorString(s) {
+       -- Name of author(s), who described the taxon
+	   -- or published the current combination and the year when appropriate.
+	   = string : String[:255]
+}
+
+// commonName has a unique relation over all its relations, how to represent?
+entity CommonName(s) {}
+
+// presumably, this is targeted at sharing common name elements between
+// common names, though no idea why language and country is not in element,
+// or why element.name is not unique.
+// For reldb, this will lead to CommonNameElement having a unique ID field
+// added, and CommonName having a commonNameElementID field referencing it
+relate {CommonName *<1 CommonNameElement}
+// these elements have small unique attributes, which will be used as keys
+// instead of creating an ID. So CommonName will  get a countryIso field.
+relate {CommonName *<? Country}
+relate {CommonName *<? Language}
+
+entity CommonNameElement(s) {
+	   name : String[:255],
+	   -- Transcription of name in foreign alphabet into English
+	   ? transliteration : String[:255]
+}
+
+entity Country/Countries {
+	   -- ISO 3166-1-Alpha-2 code
+	   = iso : String[2],
+	   -- Country
+	   = name : String[:100]
+}
+
+// Distribution is actually a relation linking a
+// TaxonDetail+Region => DistributionStatus
+relate Distribution(s) {
+	TaxonDetail *<* Region,
+	distributionStatus: DistributionStatus
+}
+
+//relate {Distribution *>1 TaxonDetail}
+//relate {Distribution *<1 Region}
+//relate {Distribution *<? DistributionStatus}
+
+// DFT is really a +-* relationship between TaxonDetail and RegionFreeText
+// Since RegionFreeText is large, it may be optimisation for MySQL.
+relate DistributionFreeText(s) {
+	TaxonDetail *<* RegionFreeText}
+
+//relate {DistributionFreeText *>1 TaxonDetail}
+//relate {DistributionFreeText *<1 RegionFreeText}
+
+// Predetermined list of distribution statuses
+entity DistributionStatus(es) {  //[:255] {
+	   -- Distribution status (common, rare, etc.)
+	   = status : String[:100]
+}
+
+entity Habitat(s)[:65535] {
+	   originalCode : String[:25],
+	   name : String[:255]
+}
+
+relate {
+	   Habitat *<1 HabitatStandard
+}
+
+// the base schema defines field standard as unique, preventing multiple
+// versions of a standard being used. It should be both fields, but the
+// optionality makes this difficult
+entity HabitatStandard(s)[:255] {
+	   = standard : String[:50],
+	   ? version : String[:10]
+}
+
+//values {
+//	   HabitatStandard standard = 'IUCN Habitats', version = '2.1' {
+//	     Habitat = '1','Forest';
+//	     Habitat = '1.1','Boreal';
+//	     Habitat = '1.2','Subarctic';
+ //      }
+//}
+
+// a table that is pure relation maps to *-*
+//relate Habitat habitat(s) *(3)-*(1000) TaxonDetail taxonDetail(s)
+relate habitat_to_taxon_detail {Habitat *>* TaxonDetail}
+
+// [2:3] indicates that a Taxon has 2 or 3 parent Taxa (this is only used
+// for hybrids
+// this could be created as a table Hybrid mapping the taxa, but for such a
+// small number it could also be parentTaxon1, parentTaxon2, parentTaxon3?
+relate Hybrid(s) {
+	   Taxon *<* parentTaxon/parentTaxa : Taxon
+}
+
+entity Language(s) {
+	   -- ISO 639-2 Alpha-3 code
+	   = iso : String[3],
+	   -- Language
+	   name : String[:100]
+}
+
+entity Reference(s) {
+	   -- Complete author string
+	   ? authors : String[:255],
+	   -- Year(s) of publication
+	   ? year : String[:25],
+	   -- Title of the publication
+	   ? title : String[:255],
+	   -- Additional information pertaining to the publication
+	   ? text : String[:65535]
+}
+
+relate reference_to_common_name {Reference *>* CommonName}
+relate reference_to_synonym {Reference *>* Synonym}
+relate reference_to_taxon {Reference *>* Taxon}
+relate {Reference *<? Uri}
+
+// *-1 or *-? relations can be stored as fields if we define a name
+// for type (no need to define plural for field as it is on the 1 side
+entity Region(s)[:65535] {
+	   //regionStandard : RegionStandard,
+	   -- Original ID or code of the region in the standard referenced
+	   -- in region_standard_id
+	   originalCode : String[:25],
+	   -- Region
+	   name : String[:255]
+}
+relate {
+	   Region *<1 RegionStandard
+}
+// this implies that
+//relate { Region *-1 name : String }
+// don't need this now
+//relate {
+//	   Region *-1 RegionStandard regionStandard
+//}
+
+relate {
+	   child(ren) : Region *-? parent : Region
+}
+
+entity RegionFreeText(s) {
+	   -- Free text description of distribution;
+	   -- provided mainly to store full text descriptions from the 
+	   -- Annual Checklist
+	   freeText : String[:12500]
+}
+
+// in the Schema, standard is unique, suggesting that it is not possible
+// to use multiple versions of the same standard
+entity RegionStandard(s)[:255] {
+	   -- Standard used to describe the region
+	   = standard : String[:50],
+	   -- Version of the standard used
+	   ? version : String[:10]
+}
+
+// Individual elements used to generate a scientific name
+entity ScientificNameElement(s) {
+	   -- Basic element of a scientific name; e.g. the epithet argentatus
+	   -- as used in Larus argentatus argenteus
+	   = nameElement : String[:100]
+}
+
+entity ScientificNameStatus(es)[:99] {
+	   -- Name status of a taxon
+	   = nameStatus : String[:50]
+}
+
+entity Scrutiny/Scrutinies {
+	   -- Most recent date a taxon name was verified; must parse correctly
+	   ? scrutinyDate : Date,
+	   -- Date as used in the original database; may be incomplete
+	   ? originalScrutinyDate : String[:100]
+}
+
+relate {Scrutiny *-1 Specialist}
+entity SourceDatabase(s) {
+	   -- Full name of the source database
+	   name : String[:255],
+	   ? abbreviatedName : String[:50],
+	   -- Name in English of the group(s) treated in the database
+	   ? groupNameInEnglish : String[:255],
+	   -- Optional author(s) and editor(s) of the source database
+	   ? authorsAndEditors : String[:255],
+	   -- Optional organisation which has compiled or 
+	   -- is owning the source database
+	   ? organisation : String[:255],
+	   -- Optional contact person of the source database
+	   ? contactPerson : String[:255],
+	   -- Optional version number of the source database
+	   ? version : String[:25],
+	   -- Optional most recent release date of the source database
+	   ? releaseDate : Date,
+	   -- Optional free text field describing the source database
+	   ? abstract : String[:65535]
+}
+
+entity Specialist(s) {
+	   = name : String[:100]
+}
+
+entity Synonym(s) {
+	   ? originalId : String[:100]
+}
+
+relate {Synonym *<? AuthorString}
+relate {Synonym *<1 ScientificNameStatus}
+
+relate SynonymNameElement(s) {
+	Synonym *<* TaxonomicRank,
+	scientificNameElement : ScientificNameElement,
+	-- Order of parents if synonym is a hybrid; see documentation for details
+	? hybridOrder : Integer[0..2]
+}
+
+//relate {TaxonomicRank 1>* SynonymNameElement}
+//relate {ScientificNameElement 1>* SynonymNameElement}
+//relate {SynonymNameElement *>1 Synonym}
+
+entity Taxon/Taxa {
+	   ? originalId : String[:100]
+}
+
+relate {SourceDatabase ?-* Taxon}
+relate {TaxonomicRank 1>* Taxon}
+relate {CommonName *>1 Taxon}
+relate {Synonym *>1 Taxon}
+
+// hmm, this would initially suggest that a Taxon can have multiple
+// TaxonDetails, but since the Taxon is a unique key, it is actually
+// a 1-1 relationship. Stored separately, as higher taxa do not have the
+// details, so it is really a 1-? relationship.
+// General rule: reference to id in another table can 1-? or 1-* - if it
+// has a unique constraint, it must be 1-?
+entity TaxonDetail(s) {
+	   -- Optional free text field describing the taxon
+	   additionalData : String[:65535]
+}
+relate {TaxonDetail ?>1 Taxon}
+relate {TaxonDetail *<? AuthorString}
+relate {TaxonDetail *<1 ScientificNameStatus}
+relate {TaxonDetail *<? Scrutiny}
+
+// TaxonNameElement is also 1-1 with Taxon, but in this case it is required
+// because TNE links to itself through parent.
+// BUG: to make this work, any taxa must always have the genus and species
+// taxon present, it is not possible to store a species with no genus since
+// the genus name element would not have a taxon to link to.
+entity TaxonNameElement(s) {
+	   //= taxon : Taxon
+}
+relate {TaxonNameElement 1<1 Taxon} // this seems backwards, but required to make it look like Base Schema
+relate {TaxonNameElement *<1 ScientificNameElement}
+// parent is documented as mapping to TNE, but since its use requires rank information, which is attached to
+// Taxon, it is really a link to Taxon (the fact that it is actually a 1-1 relationship
+relate {child(ren):TaxonNameElement *-? parent:Taxon}
+
+entity TaxonomicRank(s)[:255] {
+	   -- Taxonomic rank (e.g. family, subspecies)
+	   rank : String[:50],
+	   ? markerDisplayed : String[:50],
+	   standard : Integer[0..9]// = 0
+}
+
+entity Uri(s) {
+	   -- Unique resource identifier (URI; including LSID)
+	   resourceIdentifier : String[:500],
+	   -- Short description of the URI
+	   ? description : String[:65535]
+}
+
+relate {Uri *<1 UriScheme}
+entity UriScheme[:99] {
+	   -- Abbreviation of URI scheme
+	   scheme : String[:25],
+	   -- Full name of URI scheme
+	   name : String[:255]
+}
+
+relate uri_to_source_database {Uri *>* SourceDatabase}
+relate uri_to_taxon {Uri *>* Taxon}
+
+
+//AuthorString and CommonNameElement are separate to optimise memory usage
+//for the cases where they are shared. However, the full author string (including
+//year) and common names do not appear to be shareable between all that many
+//entries, especially since the CommonName element can also be shared, so any
+//species that are commonly mistaken for each other can always share the 
+//CommonName entry.
+
+//In ER terms, DistributionFreeText is a *-* mapping between TaxonDetails and 
+//RegionFreeText. Since RegionFreeText can be very large, it makes sense as an
+//optimisation, but it does not belong in the ER mapping.
+
+//The 1-? mapping between Taxon and TaxonDetail is only required since higher
+//taxa are not assumed to have several attributes. We are moving towards
+//supporting more of these attributes for higher taxon, e.g. common names, so
+//this distinction is less relevant.
+
+// no referential integrity

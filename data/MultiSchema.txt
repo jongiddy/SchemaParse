@@ -1,0 +1,299 @@
+name MultitreeSchema
+
+namespace org.catalogueoflife.e2.schema.MultiSchema
+
+// The Multitree Schema is based on the Base Schema, with some alterations:
+// - direct support for multiple trees, through the Trail/Tree/Node tables 
+// - multitree mods - trail
+// - sharing over multiple trees - many of the ?/1-relationships need to be 
+//    */+ as they may be valid in multiple trees (we could use ?/1 and create
+//    individual rows, but this would reduce sharing)
+// - redo sharing ideas
+
+entity CommonName(s) {
+	-- name in original character set
+	? name : String[:255],
+	-- name transliterated to the 26 unaccented Roman characters
+	? transliteration : String[:255],
+	? country: Country,
+	? language: Language
+}
+entity Country/Countries[:1024] {
+	-- ISO 3166-1-Alpha-2 code
+	= iso : String[2],
+	-- short name of the country in English
+	name : String[:255]
+}
+entity Language(s)[:65535] {
+	= iso : String[3],
+	-- name of the language in English
+	name : String[:255]
+}
+
+relate TaxonCommonName(s) {CommonName *>+ Taxon}
+
+entity Identifier(s) {
+	standard: IdentifierStandard,
+	identifier: String[:500]
+}
+
+entity IdentifierStandard(s) {
+	-- identifier standard (UUID, URI, DOI)
+	name: String[:64]
+}
+
+// As a space optimisation for RDB, add namespace prefix
+//entity IdentifierNamespace(s) {
+//	-- identifier prefix (e.g. "urn:lsid:ubio.org:namebank:")
+//	prefix: String[:255]
+//}
+// replacing above relate with:
+//relate {Identifier +<1 IdentifierNamespace}
+//relate {IdentifierNamespace *<1 IdentifierStandard}
+
+// We hope that identifiers only get assigned to one taxon, but this will
+// break as taxa are regrouped, so allow multiple ids for a taxon
+//relate {Identifier *>* Taxon}
+// the preferred identifier is one identified by CoL as suitable
+// for use in further publications - this attempts to ensure that
+// taxa that may be identified by multiple identifiers will be
+// identified by a consistent identifier in future publications
+//relate {Taxon *<? preferredIdentifier: Identifier}
+
+// ScientificName allows a name to be stored in two ways:
+// - verbatimName contains an unparsed name from a source
+// - higher-level taxa should just have this set to the
+// appropriate name (or have no scientific name and use common name instead)
+entity ScientificName(s) {
+	rank: TaxonomicRank,
+	verbatimName: String[:255],
+	? parsedName: ParsedName
+}
+entity ParsedName(s) {
+}
+
+// - parsedName, which points to the lowest-ranked element of the
+// name. This element has a link to the next highest rank, up to
+// the level required for a complete specification of the name.
+// The links are backwards (from lowest to highest) to allow sharing
+// of the higher ranks. Unlike the BS, this does not share "faba" at
+// species and subspecies level, but it does share the "Vicia" genus
+// and species-level "faba"
+entity ScientificNameElement(s) {
+	? prefix: String[:20], // any subsp./var. etc
+	? hybrid: String[1], // any hybrid marker (x, +)
+	higherTaxon: Boolean, // indicates a parsed name for a higher taxon
+	optional: Boolean, // indicates subgenus - display in parentheses
+	name: String[:255]
+}
+
+relate {ParsedName +<# ScientificNameElement}
+
+relate {ParsedName *<? basionymAuthor(s): Authority}
+relate {ParsedName *<? constructionAuthor(s): Authority}
+entity Authority {
+	author: String[:255],
+	year: String[:16]
+}
+
+// A TaxonName is a general concept whereas a Synonym is identified with a consensus (from a GSD).
+// Hence synonyms have a source identifier and status, while
+// TaxonNames have references and other identifiers
+entity TaxonName(s) {
+}
+relate {TaxonName +<1 ScientificName}
+
+entity SynonymicStatus(es)[:99] {
+	= nameStatus : String[:64]
+}
+
+relate Synonym(s) {Taxon *<* TaxonName,
+	status: SynonymicStatus,
+	? sourceIdentifier: Identifier
+}
+relate AcceptedName(s) {Taxon *<? TaxonName,
+	provisional: Boolean,
+	? sourceIdentifier: Identifier
+}
+
+entity Habitat(s)[:65535] {
+	originalCode : String[:25],
+	name : String[:255]
+}
+
+relate {
+	Habitat *<1 HabitatStandard
+}
+
+// BS: Remove the uniqueness constraint on standard, the uniqueness should
+// be enforced over both fields
+entity HabitatStandard(s)[:255] {
+	standard : String[:64],
+	? version : String[:10]
+}
+
+//relate Habitat habitat(s) *(3)-*(1000) TaxonDetail taxonDetail(s)
+relate {Habitat *>* TaxonDetail}
+
+entity Reference(s) {
+	? authors : String[:255],
+	? year : String[:25],
+	? title : String[:255],
+	? text : String[:65535],
+	? link : DownloadLink
+}
+
+relate {Reference *>* TaxonCommonName}
+relate {Reference *>* Synonym}
+relate {Reference *>* Taxon}
+
+entity Scrutiny/Scrutinies {
+	//= specialist : Specialist
+	? scrutinyDate : Date,
+	? originalScrutinyDate : String[:100]
+}
+
+relate {Scrutiny +<1 Specialist}
+entity SourceDatabase(s) {
+	= name: String[:255],
+	? abbreviatedName: String[:64],
+	? groupNameInEnglish : String[:255],
+	? authorsAndEditors : String[:255],
+	? organisation : String[:255],
+	? contactPerson : String[:255],
+	? version : String[:25],
+	? releaseDate : Date,
+	? abstract : String[:65535]
+}
+
+entity Specialist(s) {
+	= name : String[:255]
+}
+
+entity Taxon/Taxa {
+}
+
+relate TaxonSource {SourceDatabase 1-* Taxon, ?sourceIdentifier: Identifier}
+
+entity TaxonDetail(s) {
+	? additionalData : String[:65535],
+	? scrutiny : Scrutiny
+}
+relate {TaxonDetail ?>1 Taxon}
+
+entity TaxonomicRank(s)[:255] {
+	rank : String[:64],
+	? markerDisplayed : String[:64],
+	standard : Integer[0..9] = 0
+}
+
+entity DownloadLink(s) {
+	resource : String[:500],
+	? description : String[:65535]
+}
+
+entity DownloadScheme(s)[:99] {
+	scheme : String[:16],
+	name : String[:255]
+}
+relate {DownloadLink *<1 DownloadScheme}
+// Similarly to Identifiers, we can store DownloadLinks with a DownloadPrefix. This allows us to share common prefixes for URLs etc
+// also, reduce DownloadLink to 255 characters
+//entity DownloadPrefix(es) {
+//	prefix: String[:255]
+//
+//}
+//relate {DownloadLink +<1 DownloadPrefix}
+//relate {DownloadPrefix *-1 DownloadScheme}
+
+relate {DownloadLink *>* SourceDatabase}
+relate {DownloadLink *>* Taxon}
+
+entity Node(s) {
+	name: ScientificName,
+	note: String[:255]
+}
+relate {Node *-? Taxon}
+
+//entity NodeLinks {}
+//relate {NodeLinks *>1 Tree}
+//relate {NodeLinks *-? parent(s) : Node}
+//relate {NodeLinks *-1 child(ren) : Node}
+// this is designed to look like existign system, see if we can do it properly
+
+relate Branch(es) {
+	Tree *<* Node,
+	-- true or false indicates whether this branch has children; if not set, need to check with a search
+	? hasChildren: Boolean
+}
+relate {parent: Node ?-* Branch}
+//relate {parent: Branch ?>* child(ren): Branch}
+
+// relate {Branch *-1{>1 Tree,<1 Node}}
+//entity TreeContent = {
+//	tree : Tree,
+//	content : Node
+//}
+//relate {Branch ?<1 TreeContent}
+//relate {TreeContent *-1 Tree}
+//relate {TreeContent *-1 content: Node}
+
+// constraint { Branch unique tree,content }
+
+entity Tree(s) {
+	-- starts as true, changed to false when tree saved to Trail
+	canEdit: Boolean
+}
+
+entity Trail(s) {
+	name : String[:255]
+}
+relate TreeRelease(s) {Trail *<+ Tree,
+	releaseDate: DateTime
+}
+//relate {Trail *<1 currentTree: Tree}
+
+//entity TreeRelease(s) {
+//	releaseDate : DateTime
+//}
+//relate {TreeRelease *-1 Tree}
+
+//relate TrailHistory/TrailHistories {Trail 1<+ TreeRelease}
+
+//// add proposed new fields
+
+// Life Zones
+entity LifeZone(s)[:64] {
+	= name : String[:64]
+}
+relate {LifeZone *>* TaxonDetail}
+
+// Distribution
+entity Distribution(s) {
+	summary: String[:64000]
+}
+relate {TaxonDetail +<1 Distribution}
+relate {Distribution +<* AreaStatus}
+entity AreaStatus(es) {
+	status : String[1]
+}
+relate {AreaStatus *<1 Area}
+entity Area/Areas {
+	code: String[:64]
+}
+relate {Area *<1 AreaStandard}
+entity AreaStandard(s)[:65535] {
+	= name: String[:255]
+}
+relate {
+	subarea(s) : Area *-? superarea(s) : Area
+}
+
+// Subgenus - supported in scientific_name_element
+
+// Unique identifiers
+//relate {Taxon *<? sourceIdentifier: Identifier}
+//relate {Synonym *<* sourceIdentifier(s): Identifier}
+relate {TaxonName *<* Identifier}
+
+
