@@ -15,7 +15,7 @@ object Main {
 	}
 
 	def main(args : Array[String]) {
-		val filename = if (args.length > 01) args(0) else "/home/scmjpg/schema/MultiSchema.txt"
+		val filename = if (args.length > 0) args(0) else "/home/scmjpg/schema/MultiSchema.txt"
 		val lastSlash = filename.lastIndexOf("/")
     val destDir = if (args.length > 1) args(1) else filename.slice(0, lastSlash)
     val lastDot = filename.lastIndexOf(".")

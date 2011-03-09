@@ -58,18 +58,18 @@ class XSDWriter {
 			}
 		}
 	}
-	class UserType(val name: Name) extends BaseType {
-		override def toString = "tns:" + typeStyle(name)
+	class UserType(val names: Names) extends BaseType {
+		override def toString = "tns:" + typeStyle(names.singular)
 	}
-	class ComplexType(name: Name) extends UserType(name) {
+	class ComplexType(names: Names) extends UserType(names) {
 		var attributes: List[Attribute] = Nil
 		def addAttribute(attr: Attribute) = attributes = attr :: attributes
 		var elements: List[Element] = Nil
 		def addElement(elem: Element) = elements = elem :: elements
 	}
-	class EntityType(name: Name) extends ComplexType(name)
-	class SeqType(name: Name) extends ComplexType(name)
-	class IdType(name: Name) extends UserType(name)
+	class EntityType(names: Names) extends ComplexType(names)
+	class SeqType(names: Names) extends ComplexType(names)
+	class IdType(names: Names) extends UserType(names)
 
 	abstract class Element(val name: Name, val tipo: BaseType, val optional: Boolean, val unbounded: Boolean, val description: String)
 	class EntityElement(name: Name, tipo: BaseType, optional: Boolean=false, description: String="")
@@ -80,6 +80,7 @@ class XSDWriter {
 
 	val entityTypes = new HashMap[Participant,EntityType]
 	val seqTypes = new HashMap[UserType,SeqType]
+  val listTypes = new HashMap[UserType,EntityType]
 	val idTypes = new HashMap[EntityType,IdType]
   var targetNamespace: String = "unknown"
 
@@ -92,16 +93,26 @@ class XSDWriter {
     }
 		def seqType(itemType: UserType): SeqType = {
 			seqTypes.getOrElseUpdate(itemType, {
-				val t = new SeqType(itemType.name + "seq")
-				t.addElement(new SeqElement(itemType.name, itemType))
+				val t = new SeqType(Names(itemType.names.singular + "seq", None))
+				t.addElement(new SeqElement(itemType.names.singular, itemType))
+				t
+			})
+		}
+    def listType(tipo: UserType): EntityType = {
+			listTypes.getOrElseUpdate(tipo, {
+				val t = new EntityType(Names(tipo.names.singular + "list", None))
+        val seq = seqType(tipo)
+				t.addElement(new EntityElement(tipo.names.plural.getOrElse(seq.names.singular), seq, optional=true))
 				t
 			})
 		}
 		def idType(tipo: EntityType): IdType = {
+      // any type which needs an id can often benefit from a listType to
+      // help in operations, for example, retrieval of all the x's
+      listType(tipo)
 			idTypes.getOrElseUpdate(tipo, {
-				val name = new Name("id")
-				val t = new IdType(tipo.name + name)
-				tipo.addAttribute(Attribute(name, t, optional=true))
+				val t = new IdType(Names(tipo.names.singular + "id", tipo.names.plural.map(_ + "ids")))
+				tipo.addAttribute(Attribute(new Name("id"), t, optional=true))
 				t
 			})
 		}
@@ -160,7 +171,8 @@ class XSDWriter {
 		for (e <- er.participants.values;
 			if !(e.properties.isEmpty && e.relationships.isEmpty)
 		) {
-			val t = new EntityType(e.names.map(_.singular).getOrElse(e.relationship.get.name))
+			val t = new EntityType(Names(e.names.map(_.singular).getOrElse(e.relationship.get.names.singular),
+        e.names.map(_.plural).getOrElse(e.relationship.get.names.plural)))
 			for (p <- e.properties.reverse) {
 				p.baseType match {
 					case BooleanType =>
@@ -247,14 +259,14 @@ class XSDWriter {
     sb.append("        elementFormDefault='qualified'\n")
     sb.append("        attributeFormDefault='unqualified'>\n")
     indentLevel += 1
-    val a = collection.mutable.ArrayBuffer.concat(entityTypes.values, seqTypes.values, idTypes.values).sortWith(
-      (t1:UserType, t2:UserType) => t1.name.lowerCase < t2.name.lowerCase)
+    val a = collection.mutable.ArrayBuffer.concat(entityTypes.values, seqTypes.values, listTypes.values, idTypes.values).sortWith(
+      (t1:UserType, t2:UserType) => t1.names.singular.lowerCase < t2.names.singular.lowerCase)
 
 		for (tipo <- a) {
 			sb.append("\n")
 			tipo match {
 				case t : EntityType =>
-					indent.append("<complexType name='").append(typeStyle(t.name)).append("'>\n")
+					indent.append("<complexType name='").append(typeStyle(t.names.singular)).append("'>\n")
 					indentLevel += 1
 					if (t.elements.size > 0) {
 						indent.append("<all>\n")
@@ -270,7 +282,7 @@ class XSDWriter {
 					indentLevel -= 1
 					indent.append("</complexType>\n")
 				case t : SeqType =>
-					indent.append("<complexType name='").append(typeStyle(t.name)).append("'>\n")
+					indent.append("<complexType name='").append(typeStyle(t.names.singular)).append("'>\n")
 					indentLevel += 1
 					if (t.elements.size > 0) {
 						indent.append("<sequence>\n")
@@ -283,7 +295,7 @@ class XSDWriter {
 					indentLevel -= 1
 					indent.append("</complexType>\n")
 				case t : IdType =>
-					indent.append("<simpleType name='").append(typeStyle(t.name)).append("'>\n")
+					indent.append("<simpleType name='").append(typeStyle(t.names.singular)).append("'>\n")
 					indentLevel += 1
 					indent.append("<restriction base='string'/>\n")
 					indentLevel -= 1

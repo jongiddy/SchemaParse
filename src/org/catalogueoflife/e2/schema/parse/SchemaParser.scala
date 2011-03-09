@@ -103,7 +103,7 @@ class SchemaParser(er: ERGraph) extends RegexParsers {
 	    		case None => er.createParticipant()
 	    	}
 	    	p.names = names
-	    	names.map(n => r.name = n.singular)
+	    	if (names isDefined) r.names = names.get
 	    	p.maxInstances = size.map(_._2)
 	    	p.relationship = Some(r)
 	    	r.left.participant.inRelationship(r)

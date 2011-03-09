@@ -209,18 +209,18 @@ class Relationship(val left: Endpoint, val right: Endpoint) {
 	lazy val contained: Endpoint = if (left.contained) left else right
 	lazy val container: Endpoint = if (left.contained) right else left
 	lazy val hasContainer = left.contained || right.contained
-	private var givenName: Option[Name] = None
-	def name_=(name: Name) = {
-		givenName = Some(name)
+	private var givenNames: Option[Names] = None
+	def names_=(names: Names) = {
+		givenNames = Some(names)
 	}
-	def name = givenName.getOrElse(defaultName)
-	lazy val defaultName: Name = {
+	def names = givenNames.getOrElse(defaultNames)
+	lazy val defaultNames: Names = {
 		if (hasContainer) {
 			val containedName = contained.cardinality match {
 				case ZeroOrOne | One => contained.refName
 				case _ => contained.refCollectionName
 			}
-			container.refName + containedName
+			Names(container.refName + contained.refName, Some(container.refName + contained.refCollectionName))
 		}
 		else {
 			val leftName = left.cardinality match {
@@ -231,9 +231,18 @@ class Relationship(val left: Endpoint, val right: Endpoint) {
 				case ZeroOrOne | One => right.refName
 				case _ => right.refCollectionName
 			}
-			leftName + rightName + "map"
+			Names(left.refName + right.refName + "map", None)
 		}
 	}
+  def name = {
+    if (hasContainer) {
+      contained.cardinality match {
+        case ZeroOrOne | One => names.singular
+        case _ => names.plural.get
+      }
+    }
+    else names.singular
+  }
 }
 
 class ERGraph {
