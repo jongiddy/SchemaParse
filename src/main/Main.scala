@@ -15,11 +15,13 @@ object Main {
 	}
 
 	def main(args : Array[String]) {
-		val filename = if (args.length > 1) args(0) else "/home/scmjpg/schema/MultiSchema.txt"
-		val lastDot = filename.lastIndexOf(".")
+		val filename = if (args.length > 01) args(0) else "/home/scmjpg/schema/MultiSchema.txt"
 		val lastSlash = filename.lastIndexOf("/")
-		val stub = if (lastDot > 0 && lastDot > lastSlash + 1) filename.slice(0, lastDot) else filename
-		val mysqlFile = stub + "-MySQL.sql"
+    val destDir = if (args.length > 1) args(1) else filename.slice(0, lastSlash)
+    val lastDot = filename.lastIndexOf(".")
+		val stub = destDir + (if (lastDot > 0 && lastDot > lastSlash + 1) filename.slice(lastSlash, lastDot)
+      else filename.slice(lastSlash, filename.length))
+		val mysqlFile = stub + "-MySQL5.sql"
 		val sqliteFile = stub + "-SQLite.sql"
 		val dotFile = stub + ".dot"
 		val xsdFile = stub + ".xsd"
