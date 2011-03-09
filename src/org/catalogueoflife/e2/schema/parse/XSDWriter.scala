@@ -81,9 +81,15 @@ class XSDWriter {
 	val entityTypes = new HashMap[Participant,EntityType]
 	val seqTypes = new HashMap[UserType,SeqType]
 	val idTypes = new HashMap[EntityType,IdType]
+  var targetNamespace: String = "unknown"
 
 	def analyse(er: ERGraph) = {
-
+    for (groupId <- er.groupId;
+      artifactId <- er.artifactId
+    ) {
+       targetNamespace = "http://" + groupId.split("[.]").reverse.mkString(".") + "/" + artifactId.replaceAll("[.]", "/") +
+        er.version.map("/" + _.replaceAll("[.]", "/")).getOrElse("")
+    }
 		def seqType(itemType: UserType): SeqType = {
 			seqTypes.getOrElseUpdate(itemType, {
 				val t = new SeqType(itemType.name + "seq")
@@ -234,15 +240,15 @@ class XSDWriter {
 				else sb.append("/>\n")
 			}
 		}
-		sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
-		sb.append("<schema targetNamespace='http://wp7.4d4life.eu/2010/09/Taxon'\n")
-        sb.append("        xmlns='http://www.w3.org/2001/XMLSchema'\n")
-        sb.append("        xmlns:tns='http://wp7.4d4life.eu/2010/09/Taxon'\n")
-        sb.append("        elementFormDefault='qualified'\n")
-        sb.append("        attributeFormDefault='unqualified'>\n")
-        indentLevel += 1
-        val a = collection.mutable.ArrayBuffer.concat(entityTypes.values, seqTypes.values, idTypes.values).sortWith(
-				(t1:UserType, t2:UserType) => t1.name.lowerCase < t2.name.lowerCase)
+    sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
+    sb.append("<schema targetNamespace='" + targetNamespace + "'\n")
+    sb.append("        xmlns='http://www.w3.org/2001/XMLSchema'\n")
+    sb.append("        xmlns:tns='" + targetNamespace + "'\n")
+    sb.append("        elementFormDefault='qualified'\n")
+    sb.append("        attributeFormDefault='unqualified'>\n")
+    indentLevel += 1
+    val a = collection.mutable.ArrayBuffer.concat(entityTypes.values, seqTypes.values, idTypes.values).sortWith(
+      (t1:UserType, t2:UserType) => t1.name.lowerCase < t2.name.lowerCase)
 
 		for (tipo <- a) {
 			sb.append("\n")

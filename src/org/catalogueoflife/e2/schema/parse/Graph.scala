@@ -239,7 +239,9 @@ class Relationship(val left: Endpoint, val right: Endpoint) {
 class ERGraph {
 
 	var name: Option[Name] = None
-	var namespace: Option[String] = None
+  var groupId: Option[String] = None
+  var artifactId: Option[String] = None
+  var version: Option[String] = None
 	var participants = Map[Name,Participant]()
 
 	var lock: AnyRef = new Object

@@ -71,12 +71,19 @@ class SchemaParser(er: ERGraph) extends RegexParsers {
 	}
 	lazy val count = "1" | "#?" | multiplicity
 	lazy val multiplicity = "?" | "*" | "+" | "#"
-	lazy val namespace = ("namespace" ~> qualifiedName) ^^ {
-	    case ns => er.namespace = Some(ns); ns
+	lazy val groupId = ("groupId" ~> qualifiedName) ^^ {
+	    case id => er.groupId = Some(id); id
+	}
+  lazy val artifactId = ("artifactId" ~> qualifiedName) ^^ {
+	    case id => er.artifactId = Some(id); id
+	}
+  	lazy val version = ("version" ~> "[A-Za-z0-9.]+".r) ^^ {
+	    case id => er.version = Some(id.trim); id
 	}
 	lazy val name = ("name" ~> unqualifiedName) ^^ {
 		case name => er.name = Some(new Name(name))
 	}
+  lazy val attribute = name | groupId | artifactId | version
 	lazy val entity: Parser[Participant] = ("entity" ~> label ~ (ssize?) ~ entityClause) ^^ {
 	    case (names ~ size ~ properties) => {
 	    	val p = er.getParticipant(names.singular)
@@ -104,5 +111,5 @@ class SchemaParser(er: ERGraph) extends RegexParsers {
 	    	properties foreach {p.addProperty(_, er)}
 	    	p
 	}
-	lazy val graph = (name?) ~ (namespace?) ~ ((entity | relate)*)
+	lazy val graph = ((attribute)*) ~ ((entity | relate)*)
 }

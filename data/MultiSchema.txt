@@ -1,6 +1,8 @@
 name MultitreeSchema
 
-namespace org.catalogueoflife.e2.schema.MultiSchema
+groupId org.catalogueoflife.e2
+artifactId common.serviceinterfaces.types.multischema
+version 11.03.09
 
 // The Multitree Schema is based on the Base Schema, with some alterations:
 // - direct support for multiple trees, through the Trail/Tree/Node tables 
@@ -226,7 +228,9 @@ relate Branch(es) {
 	-- true or false indicates whether this branch has children; if not set, need to check with a search
 	? hasChildren: Boolean
 }
-relate {parent: Node ?-* Branch}
+// following was {parent: Node ?-* Branch} since branch is unique given treeId and nodeId
+// but a branchId is generated for branchAlternatives anyway, so use that instead
+relate {parent: Branch ?-* Branch}
 relate {Branch *<* alternative(s): Branch,
     label: String[:64]
 }
