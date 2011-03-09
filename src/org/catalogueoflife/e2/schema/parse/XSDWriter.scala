@@ -54,7 +54,7 @@ class XSDWriter {
 				case UnsizedStringType => XSDString
 				case BooleanType => XSDBoolean
 				case CalendarType => XSDDate
-				case ClockType => XSDBoolean
+				case ClockType => XSDDateTime
 			}
 		}
 	}

@@ -65,7 +65,7 @@ entity IdentifierStandard(s) {
 // - higher-level taxa should just have this set to the
 // appropriate name (or have no scientific name and use common name instead)
 entity ScientificName(s) {
-	rank: TaxonomicRank,
+	taxonomicRank: TaxonomicRank,
 	verbatimName: String[:255],
 	? parsedName: ParsedName
 }
@@ -93,7 +93,7 @@ relate {ParsedName *<? basionymAuthor(s): Authority}
 relate {ParsedName *<? constructionAuthor(s): Authority}
 entity Authority {
 	author: String[:255],
-	year: String[:16]
+	? year: String[:16]
 }
 
 // A TaxonName is a general concept whereas a Synonym is identified with a consensus (from a GSD).
@@ -183,7 +183,7 @@ relate {TaxonDetail ?>1 Taxon}
 
 entity TaxonomicRank(s)[:255] {
 	rank : String[:64],
-	? markerDisplayed : String[:64],
+	//? markerDisplayed : String[:64], // not needed, we put the "var." in scientificNameElement prefix
 	standard : Integer[0..9] = 0
 }
 
@@ -251,7 +251,7 @@ entity Tree(s) {
 entity Trail(s) {
 	name : String[:255]
 }
-relate TreeRelease(s) {Trail *<+ Tree,
+relate TreeRelease(s) {Trail *-+ Tree,
 	releaseDate: DateTime
 }
 //relate {Trail *<1 currentTree: Tree}
@@ -275,7 +275,7 @@ relate {LifeZone *>* TaxonDetail}
 entity Distribution(s) {
 	summary: String[:64000]
 }
-relate {TaxonDetail +<1 Distribution}
+relate {TaxonDetail +<? Distribution}
 relate {Distribution +<* AreaStatus}
 entity AreaStatus(es) {
 	status : String[1]
