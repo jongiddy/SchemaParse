@@ -2,7 +2,8 @@ name MultitreeSchema
 
 groupId org.catalogueoflife.e2
 artifactId common.serviceinterfaces.types.multischema
-version 11.03.09
+// do not use version until we figure out how to get JAXB to behave with package naming
+//version 11.03.09
 
 // The Multitree Schema is based on the Base Schema, with some alterations:
 // - direct support for multiple trees, through the Trail/Tree/Node tables 
@@ -175,7 +176,7 @@ entity Specialist(s) {
 entity Taxon/Taxa {
 }
 
-relate TaxonSource {SourceDatabase 1-* Taxon, ?sourceIdentifier: Identifier}
+relate TaxonSource(s) {SourceDatabase 1-* Taxon, ?sourceIdentifier: Identifier}
 
 entity TaxonDetail(s) {
 	? additionalData : String[:65535],
