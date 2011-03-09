@@ -14,7 +14,7 @@ object Main {
 		try { op(p) } finally { p.close() }
 	}
 
-	def main(args : Array[String]) : Unit = {
+	def main(args : Array[String]) {
 		val filename = if (args.length > 1) args(0) else "/home/scmjpg/schema/MultiSchema.txt"
 		val lastDot = filename.lastIndexOf(".")
 		val lastSlash = filename.lastIndexOf("/")

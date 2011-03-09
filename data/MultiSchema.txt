@@ -211,7 +211,7 @@ relate {DownloadLink *>* Taxon}
 
 entity Node(s) {
 	name: ScientificName,
-	note: String[:255]
+	text: String[:255]
 }
 relate {Node *-? Taxon}
 
@@ -219,7 +219,7 @@ relate {Node *-? Taxon}
 //relate {NodeLinks *>1 Tree}
 //relate {NodeLinks *-? parent(s) : Node}
 //relate {NodeLinks *-1 child(ren) : Node}
-// this is designed to look like existign system, see if we can do it properly
+// this is designed to look like existing system, see if we can do it properly
 
 relate Branch(es) {
 	Tree *<* Node,
@@ -227,6 +227,9 @@ relate Branch(es) {
 	? hasChildren: Boolean
 }
 relate {parent: Node ?-* Branch}
+relate {Branch *<* alternative(s): Branch,
+    label: String[:64]
+}
 //relate {parent: Branch ?>* child(ren): Branch}
 
 // relate {Branch *-1{>1 Tree,<1 Node}}
