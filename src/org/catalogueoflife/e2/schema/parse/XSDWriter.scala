@@ -40,7 +40,7 @@ class XSDWriter {
 		override def toString = "date"
 	}
 	case object XSDDateTime extends XSDType {
-		override def toString = "dateTime"
+		override def toString = "integer"             // was datetime, changed to get things working with SCA
 	}
 	case object XSDBoolean extends XSDType {
 		override def toString = "boolean"
@@ -60,10 +60,10 @@ class XSDWriter {
 	}
 	class UserType(val names: Names) extends BaseType {
 		override def toString = "tns:" + typeStyle(names.singular)
+    var attributes: List[Attribute] = Nil
+    def addAttribute(attr: Attribute) = attributes = attr :: attributes
 	}
 	class ComplexType(names: Names) extends UserType(names) {
-		var attributes: List[Attribute] = Nil
-		def addAttribute(attr: Attribute) = attributes = attr :: attributes
 		var elements: List[Element] = Nil
 		def addElement(elem: Element) = elements = elem :: elements
 	}
@@ -246,6 +246,20 @@ class XSDWriter {
 		) {
 			handleRelationship(e.relationship.get)
 		}
+    for (e <- er.participants.values;
+      if !(e.properties.isEmpty && e.relationships.isEmpty);
+      if (e.relationship.isDefined)
+    ) {
+      // as a final step, any relationship-entities that do not have an idType get one created here
+      val r = e.relationship.get
+      val tipo = entityTypes(e)
+			idTypes.getOrElseUpdate(tipo, {
+		    val t = new IdType(Names(tipo.names.singular + "id", Some(tipo.names.singular + "ids")))
+			  t.addAttribute(new Attribute(r.left.refName + "id", idType(entityTypes(r.left.participant))))
+			  t.addAttribute(new Attribute(r.right.refName + "id", idType(entityTypes(r.right.participant))))
+        t
+			})
+    }
 	}
 	def typeStyle(name: Name) = name.pascalCase
 	def tagStyle(name: Name) = name.camelCase
@@ -350,11 +364,19 @@ class XSDWriter {
 					indentLevel -= 1
 					indent.append("</complexType>\n")
 				case t : IdType =>
-					indent.append("<simpleType name='").append(typeStyle(t.names.singular)).append("'>\n")
+					indent.append("<complexType name='").append(typeStyle(t.names.singular)).append("'>\n")
 					indentLevel += 1
-					indent.append("<restriction base='string'/>\n")
+          indent.append("<simpleContent>\n")
+          indentLevel += 1
+          indent.append("<extension base='string'>\n")
+          indentLevel += 1
+          appendAttributes(t.attributes.reverse)
+          indentLevel -= 1
+          indent.append("</extension>\n")
+          indentLevel -= 1
+          indent.append("</simpleContent>\n")
 					indentLevel -= 1
-					indent.append("</simpleType>\n")
+					indent.append("</complexType>\n")
 			}
 		}
 		indentLevel -= 1
