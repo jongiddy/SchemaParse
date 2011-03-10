@@ -231,10 +231,12 @@ relate Branch(es) {
 }
 // following was {parent: Node ?-* Branch} since branch is unique given treeId and nodeId
 // but a branchId is generated for branchAlternatives anyway, so use that instead
-relate {parent: Branch ?-* Branch}
-relate {Branch *<* alternative(s): Branch,
-    label: String[:64]
-}
+// actually, go back to old way to change id back to treeId/nodeId
+relate {parent: Node ?-* Branch}
+// remove this to prevent it generating a branchid
+//relate {Branch *<* alternative(s): Branch,
+//    label: String[:64]
+//}
 //relate {parent: Branch ?>* child(ren): Branch}
 
 // relate {Branch *-1{>1 Tree,<1 Node}}
