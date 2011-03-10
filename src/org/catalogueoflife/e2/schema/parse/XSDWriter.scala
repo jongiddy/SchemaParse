@@ -363,19 +363,17 @@ class XSDWriter {
 					appendAttributes(t.attributes.reverse)
 					indentLevel -= 1
 					indent.append("</complexType>\n")
-				case t : IdType =>
+				case t : IdType if t.attributes.isEmpty =>
+          indent.append("<simpleType name='").append(typeStyle(t.names.singular)).append("'>\n")
+					indentLevel += 1
+					indent.append("<restriction base='string'/>\n")
+					indentLevel -= 1
+					indent.append("</simpleType>\n")
+        case t : IdType =>
 					indent.append("<complexType name='").append(typeStyle(t.names.singular)).append("'>\n")
 					indentLevel += 1
-          indent.append("<simpleContent>\n")
-          indentLevel += 1
-          indent.append("<extension base='string'>\n")
-          indentLevel += 1
           appendAttributes(t.attributes.reverse)
           indentLevel -= 1
-          indent.append("</extension>\n")
-          indentLevel -= 1
-          indent.append("</simpleContent>\n")
-					indentLevel -= 1
 					indent.append("</complexType>\n")
 			}
 		}
