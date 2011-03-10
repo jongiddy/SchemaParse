@@ -258,8 +258,9 @@ entity Tree(s) {
 entity Trail(s) {
 	name : String[:255]
 }
-relate TreeRelease(s) {Trail *-+ Tree,
-	releaseDate: DateTime
+relate TreeRelease(s) {Trail *<+ Tree,
+	releaseDate: DateTime,
+	description: String[:1000]
 }
 //relate {Trail *<1 currentTree: Tree}
 

@@ -67,8 +67,11 @@ class XSDWriter {
 		var elements: List[Element] = Nil
 		def addElement(elem: Element) = elements = elem :: elements
 	}
-	class EntityType(names: Names) extends ComplexType(names)
+	class EntityType(names: Names) extends ComplexType(names) {
+    var idOnlySupported = false
+  }
 	class SeqType(names: Names) extends ComplexType(names)
+  class OrIdType(names: Names) extends ComplexType(names)
 	class IdType(names: Names) extends UserType(names)
 
 	abstract class Element(val name: Name, val tipo: BaseType, val optional: Boolean, val unbounded: Boolean, val description: String)
@@ -81,6 +84,7 @@ class XSDWriter {
 	val entityTypes = new HashMap[Participant,EntityType]
 	val seqTypes = new HashMap[UserType,SeqType]
   val listTypes = new HashMap[UserType,EntityType]
+  val orIdTypes = new HashMap[EntityType,OrIdType]
 	val idTypes = new HashMap[EntityType,IdType]
   var targetNamespace: String = "unknown"
 
@@ -106,17 +110,26 @@ class XSDWriter {
 				t
 			})
 		}
-		def idType(tipo: EntityType): IdType = {
+		def orIdType(tipo: EntityType): OrIdType = {
+			orIdTypes.getOrElseUpdate(tipo, {
+				val t = new OrIdType(Names(tipo.names.singular + "orId", tipo.names.plural.map(_ + "orIds")))
+        t.addElement(new EntityElement(tipo.names.singular, tipo))
+        val idTipo = idType(tipo)
+        t.addElement(new EntityElement(idTipo.names.singular, idTipo))
+				t
+			})
+		}
+    def idType(tipo: EntityType): IdType = {
       // any type which needs an id can often benefit from a listType to
       // help in operations, for example, retrieval of all the x's
       listType(tipo)
 			idTypes.getOrElseUpdate(tipo, {
-				val t = new IdType(Names(tipo.names.singular + "id", tipo.names.plural.map(_ + "ids")))
+				val t = new IdType(Names(tipo.names.singular + "id", Some(tipo.names.singular + "ids")))
 				tipo.addAttribute(Attribute(new Name("id"), t, optional=true))
 				t
 			})
 		}
-		def handleContainedRelationship(containerRef: Endpoint, containedRef: Endpoint) = {
+		def handleContainedRelationship(containerRef: Endpoint, containedRef: Endpoint, orId: Boolean=false) = {
 			val containerType = entityTypes(containerRef.participant)
 			if (containerRef.participant == containedRef.participant) {
 				// different rules for circular references (entity contains instance(s) of itself)
@@ -134,16 +147,31 @@ class XSDWriter {
 			}
 			else {
 				val containedType = entityTypes(containedRef.participant)
-				containedRef.cardinality match {
-					case ZeroOrOne =>
-						containerType.addElement(new EntityElement(containedRef.refName, containedType, optional=true))
-					case One =>
-						containerType.addElement(new EntityElement(containedRef.refName, containedType))
-					case ZeroOrMore | OrderedZeroOrMore =>
-						containerType.addElement(new EntityElement(containedRef.refCollectionName, seqType(containedType), optional=true))
-					case OneOrMore | OrderedOneOrMore =>
-						containerType.addElement(new EntityElement(containedRef.refCollectionName, seqType(containedType)))
-				}
+        if (orId) {
+          val addedType = orIdType(containedType)
+          containedRef.cardinality match {
+            case ZeroOrOne =>
+              containerType.addElement(new EntityElement(containedRef.refName + "orId", addedType, optional=true))
+            case One =>
+              containerType.addElement(new EntityElement(containedRef.refName + "orId", addedType))
+            case ZeroOrMore | OrderedZeroOrMore =>
+              containerType.addElement(new EntityElement(containedRef.refCollectionName + "orIds", seqType(addedType), optional=true))
+            case OneOrMore | OrderedOneOrMore =>
+              containerType.addElement(new EntityElement(containedRef.refCollectionName + "orIds", seqType(addedType)))
+          }
+        }
+        else {
+          containedRef.cardinality match {
+            case ZeroOrOne =>
+              containerType.addElement(new EntityElement(containedRef.refName, containedType, optional=true))
+            case One =>
+              containerType.addElement(new EntityElement(containedRef.refName, containedType))
+            case ZeroOrMore | OrderedZeroOrMore =>
+              containerType.addElement(new EntityElement(containedRef.refCollectionName, seqType(containedType), optional=true))
+            case OneOrMore | OrderedOneOrMore =>
+              containerType.addElement(new EntityElement(containedRef.refCollectionName, seqType(containedType)))
+          }
+        }
 				containerRef.cardinality match {
 					case ZeroOrOne | One =>
 						containedType.addAttribute(Attribute(containerRef.refName + "id", idType(containerType), optional=true))
@@ -201,6 +229,11 @@ class XSDWriter {
 			val leftB = r.left.copy(participant=e)
 			val rightB = r.right.copy(cardinality = One)
 			handleRelationship(new Relationship(leftB, rightB))
+      if (r.hasContainer) {
+        val containedType = entityTypes(r.contained.participant)
+        idType(containedType) // ensure contained type has an id type
+        containedType.idOnlySupported = true
+      }
 		}
 		for (e <- er.participants.values;
 			if e.properties.isEmpty && e.relationships.isEmpty
@@ -259,7 +292,8 @@ class XSDWriter {
     sb.append("        elementFormDefault='qualified'\n")
     sb.append("        attributeFormDefault='unqualified'>\n")
     indentLevel += 1
-    val a = collection.mutable.ArrayBuffer.concat(entityTypes.values, seqTypes.values, listTypes.values, idTypes.values).sortWith(
+    val a = collection.mutable.ArrayBuffer.concat(entityTypes.values, seqTypes.values, listTypes.values,
+      orIdTypes.values, idTypes.values).sortWith(
       (t1:UserType, t2:UserType) => t1.names.singular.lowerCase < t2.names.singular.lowerCase)
 
 		for (tipo <- a) {
@@ -269,7 +303,9 @@ class XSDWriter {
 					indent.append("<complexType name='").append(typeStyle(t.names.singular)).append("'>\n")
 					indentLevel += 1
 					if (t.elements.size > 0) {
-						indent.append("<all>\n")
+						indent.append("<all")
+            if (t.idOnlySupported) sb.append(" minOccurs='0'")
+            sb.append(">\n")
 						indentLevel += 1
 						appendElements(t.elements.reverse.filter(elem => !elem.optional).sortWith(
 								(elem1:Element, elem2:Element) => elem1.tipo.toString < elem2.tipo.toString))
@@ -290,6 +326,19 @@ class XSDWriter {
 						appendElements(t.elements.reverse)
 						indentLevel -= 1
 						indent.append("</sequence>\n")
+					}
+					appendAttributes(t.attributes.reverse)
+					indentLevel -= 1
+					indent.append("</complexType>\n")
+        case t : OrIdType =>
+          indent.append("<complexType name='").append(typeStyle(t.names.singular)).append("'>\n")
+          indentLevel += 1
+					if (t.elements.size > 0) {
+						indent.append("<choice>\n")
+						indentLevel += 1
+						appendElements(t.elements.reverse)
+						indentLevel -= 1
+						indent.append("</choice>\n")
 					}
 					appendAttributes(t.attributes.reverse)
 					indentLevel -= 1
