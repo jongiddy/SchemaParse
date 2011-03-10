@@ -49,10 +49,10 @@ class XSDWriter {
 	object XSDType {
 		def apply(graphType: GraphType) : XSDType = {
 			graphType match {
-				case _: IntType => XSDInteger
+				case _ : IntType => XSDInteger
 				case SizedStringType(min, max) => XSDString
 				case UnsizedStringType => XSDString
-				case BooleanType => XSDBoolean
+				case _ : BooleanType => XSDBoolean
 				case CalendarType => XSDDate
 				case ClockType => XSDDateTime
 			}
@@ -203,12 +203,18 @@ class XSDWriter {
         e.names.map(_.plural).getOrElse(e.relationship.get.names.plural)))
 			for (p <- e.properties.reverse) {
 				p.baseType match {
-					case BooleanType =>
-						t.addAttribute(new Attribute(p.names.singular, XSDType(p.baseType), optional=p.optional, description=p.description))
+					case BooleanType(None) =>
+						t.addAttribute(new Attribute(p.names.singular, XSDType(p.baseType), optional=p.optional,
+              description=p.description))
+          case BooleanType(Some(default)) =>
+						t.addAttribute(new Attribute(p.names.singular, XSDType(p.baseType), optional=true,
+              default=Some(if (default) "true" else "false"), description=p.description))
 					case IntType(_, Some(default)) =>
-						t.addAttribute(new Attribute(p.names.singular, XSDType(p.baseType), optional=true, default=Some(default.toString), description=p.description))
+						t.addAttribute(new Attribute(p.names.singular, XSDType(p.baseType), optional=true,
+              default=Some(default.toString), description=p.description))
 					case _ =>
-						t.addElement(new EntityElement(p.names.singular, XSDType(p.baseType), optional=p.optional, description=p.description))
+						t.addElement(new EntityElement(p.names.singular, XSDType(p.baseType), optional=p.optional,
+              description=p.description))
 				}
 			}
 			entityTypes(e) = t

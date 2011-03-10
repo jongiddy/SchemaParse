@@ -85,8 +85,8 @@ entity ParsedName(s) {
 entity ScientificNameElement(s) {
 	? prefix: String[:20], // any subsp./var. etc
 	? hybrid: String[1], // any hybrid marker (x, +)
-	higherTaxon: Boolean, // indicates a parsed name for a higher taxon
-	optional: Boolean, // indicates subgenus - display in parentheses
+	higherTaxon: Boolean = false, // indicates a parsed name for a higher taxon
+	optional: Boolean = false, // indicates subgenus - display in parentheses
 	name: String[:255]
 }
 
@@ -115,7 +115,7 @@ relate Synonym(s) {Taxon *<* TaxonName,
 	? sourceIdentifier: Identifier
 }
 relate AcceptedName(s) {Taxon *<? TaxonName,
-	provisional: Boolean,
+	provisional: Boolean = false,
 	? sourceIdentifier: Identifier
 }
 
@@ -252,7 +252,7 @@ relate {parent: Node ?-* Branch}
 
 entity Tree(s) {
 	-- starts as true, changed to false when tree saved to Trail
-	canEdit: Boolean
+	canEdit: Boolean = false
 }
 
 entity Trail(s) {
@@ -260,7 +260,7 @@ entity Trail(s) {
 }
 relate TreeRelease(s) {Trail *<+ Tree,
 	releaseDate: DateTime,
-	description: String[:1000]
+	? description: String[:1000]
 }
 //relate {Trail *<1 currentTree: Tree}
 

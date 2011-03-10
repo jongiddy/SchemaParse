@@ -105,7 +105,7 @@ class MySQLWriter {
 				case UnsizedStringType => MySQLLongTextType
 				case CalendarType => MySQLDateType
 				case ClockType => MySQLDateTimeType
-				case BooleanType => MySQLBoolType
+				case _: BooleanType => MySQLBoolType
 				case _ => throw new RuntimeException("cannot convert type")
 			}
 		}

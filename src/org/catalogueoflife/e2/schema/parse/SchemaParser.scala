@@ -28,19 +28,24 @@ class SchemaParser(er: ERGraph) extends RegexParsers {
 	lazy val description: Parser[String] = "--.+\n".r ^^ {
 		case d => d.drop(2).trim
 	}
-	lazy val typeval: Parser[GraphType] = (("Integer" ~ (isize?) ~ (intdefault?)) | ("String" ~ (ssize?)) | unqualifiedName) ^^ {
+	lazy val typeval: Parser[GraphType] = (("Integer" ~ (isize?) ~ (intdefault?)) | ("String" ~ (ssize?)) |
+    ("Boolean" ~ (booldefault?)) | unqualifiedName) ^^ {
 	    case "Integer" ~ None ~ (default: Option[BigInt]) => IntType(None, default)
 	    case "Integer" ~ Some(size: (BigInt, BigInt)) ~ (default: Option[BigInt]) => IntType(Some(size), default)
 	    case "String" ~ None => UnsizedStringType
 	    case "String" ~ Some(size: (BigInt, BigInt)) => SizedStringType(size._1, size._2)
 	    case "Date" => CalendarType
 	    case "DateTime" => ClockType
-	    case "Boolean" => BooleanType
+	    case "Boolean" ~ (default: Option[Boolean]) => BooleanType(default)
 	    case name: String => UserType(new Name(name))
 	}
-	lazy val intdefault: Parser[BigInt] = "=" ~> anyint ^^ {
-		case i => BigInt(i)
-	}
+  lazy val booldefault: Parser[Boolean] = "=" ~> ("true" | "false") ^^ {
+    case "true" => true
+    case "false" => false
+  }
+  lazy val intdefault: Parser[BigInt] = "=" ~> anyint ^^ {
+    case i => BigInt(i)
+  }
 	lazy val isize: Parser[(BigInt, BigInt)] = ("[" ~> anyint ~ ".." ~ anyint <~ "]") ^^ {
 	    case (min ~ ".." ~ max) => (BigInt(min), BigInt(max))
 	}

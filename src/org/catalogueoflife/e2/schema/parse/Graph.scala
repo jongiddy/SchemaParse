@@ -38,7 +38,7 @@ case object ClockType extends GraphType {
 		"DateTime"
 	}
 }
-case object BooleanType extends GraphType {
+case class BooleanType(default: Option[Boolean] = None) extends GraphType {
 	override def toString(): String = {
 		"Boolean"
 	}
