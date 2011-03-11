@@ -37,11 +37,11 @@ class XSDWriter {
 		override def toString = "string"
 	}
 	case object XSDDate extends XSDType {
-		override def toString = "date"
-	}
+		override def toString = "string"              // was date, changed to get things working with SCA
+	}                                               // use string, since dates are usually just for display
 	case object XSDDateTime extends XSDType {
 		override def toString = "integer"             // was datetime, changed to get things working with SCA
-	}
+	}                                               // use integer because datetimes are often for comparison
 	case object XSDBoolean extends XSDType {
 		override def toString = "boolean"
 	}

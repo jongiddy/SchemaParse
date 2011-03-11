@@ -5,7 +5,7 @@ import java.io.Writer
 class SQLiteWriter extends RelationalWriter {
   def escapeIdentifier(word: String) = "`" + word + "`"
   def formatComment(text: String) = "/* " + text + " */"
-  def formatAutoIncrement() = "/*" + sqlStyle("auto_increment") + "*/"
+  def formatAutoIncrement() = "/*" + sqlStyle("autoincrement") + "*/"
 
 
   // SQLite type system is not really thi extensive, but these types

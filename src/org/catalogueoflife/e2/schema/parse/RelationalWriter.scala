@@ -218,23 +218,23 @@ abstract class RelationalWriter {
 		Field(e.refName + key.originalName, key.baseType, notNull=true,
 				unique=(c==ZeroOrOne || c==One), references=Some((table, onDeleteAction)))
 	}
-	def createForeignKey(forKey: Endpoint, target: Endpoint, notNull: Boolean, unique: Boolean, onDeleteAction: MySQLAction) {
-		// add a foreign key to forKey pointing to target
-		val forKeyTable = tables(forKey.participant)
-		val targetTable = tables(target.participant)
-		val targetKey = targetTable.primaryKey
-		val fieldName = target.refName + targetKey.originalName
-		val field = Field(fieldName, targetKey.baseType, notNull, unique,
-				references=Some((targetTable, onDeleteAction)))
-		forKeyTable.addField(field)
+	def createForeignKey(child: Endpoint, parent: Endpoint, notNull: Boolean, unique: Boolean, onDeleteAction: MySQLAction) {
+		// add a foreign key to child table pointing to parent table
+		val childTable = tables(child.participant)
+		val parentTable = tables(parent.participant)
+		val parentKey = parentTable.primaryKey
+		val fieldName = parent.refName + parentKey.originalName
+		val field = Field(fieldName, parentKey.baseType, notNull, unique,
+				references=Some((parentTable, onDeleteAction)))
+		childTable.addField(field)
 		if (onDeleteAction == Cascade) {
 			// create an index to speed up cascading deletion
-			forKey.cardinality match {
+			child.cardinality match {
 				case ZeroOrOne | One =>
 					// null fields are considered unique, so OK to use this for ZeroOrOne
-					forKeyTable.uniqueKeys = List(field) :: forKeyTable.uniqueKeys
+					childTable.uniqueKeys = List(field) :: childTable.uniqueKeys
 				case _ =>
-					forKeyTable.indexKeys = List(field) :: forKeyTable.indexKeys
+					childTable.indexKeys = List(field) :: childTable.indexKeys
 			}
 		}
 	}
