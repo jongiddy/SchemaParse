@@ -176,7 +176,7 @@ entity Specialist(s) {
 entity Taxon/Taxa {
 }
 
-relate TaxonSource(s) {SourceDatabase 1-* Taxon, ?sourceIdentifier: Identifier}
+relate TaxonSource(s) {SourceDatabase 1>* Taxon, ?sourceIdentifier: Identifier}
 
 entity TaxonDetail(s) {
 	? additionalData : String[:65535],
