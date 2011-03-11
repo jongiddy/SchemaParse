@@ -4,7 +4,7 @@ import java.io.FileReader
 import org.catalogueoflife.e2.schema.parse.SchemaParser
 import org.catalogueoflife.e2.schema.parse.ERGraph
 import org.catalogueoflife.e2.schema.parse.MySQLWriter
-//import org.catalogueoflife.e2.schema.parse.SQLiteWriter
+import org.catalogueoflife.e2.schema.parse.SQLiteWriter
 import org.catalogueoflife.e2.schema.parse.DOTWriter
 import org.catalogueoflife.e2.schema.parse.XSDWriter
 
@@ -32,25 +32,18 @@ object Main {
 			case parser.Success(graph, _) => {
 				er.print()
 				er.validate()
-			 	val mysql = new MySQLWriter()
-			 	mysql.analyse(er)
-			 	printToFile(new java.io.File(mysqlFile)) { writer => mysql.write(writer) }
+        val mysql = new MySQLWriter()
+        mysql.analyse(er)
+        printToFile(new java.io.File(mysqlFile)) { writer => mysql.write(writer) }
+        val sqlite = new SQLiteWriter()
+        sqlite.analyse(er)
+        printToFile(new java.io.File(sqliteFile)) { writer => sqlite.write(writer) }
 			 	val dot = new DOTWriter()
 			 	dot.analyse(er)
 			 	printToFile(new java.io.File(dotFile)) { writer => dot.write(writer) }
 			 	val xsd = new XSDWriter()
 			 	xsd.analyse(er)
 			 	printToFile(new java.io.File(xsdFile)) { writer => xsd.write(writer) }
-				/*
-			 	printToFile(new java.io.File(dotFile)) { file =>
-			 	 	file.println(new DOTWriter(er))
-			 	}
-			 	printToFile(new java.io.File(xsdFile)) { file =>
-			 		val x = new XSDWriter
-			 		x.process(er)
-			 	 	file.println(x)
-			 	}
-			 	*/
 			}
 			case p@parser.Failure(msg, next) => println("Fail: " + p);
 			case p@parser.Error(msg, next) => println("Error: " + p);

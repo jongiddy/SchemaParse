@@ -226,7 +226,7 @@ relate {Node *-? Taxon}
 
 relate Branch(es) {
 	Tree *<* Node,
-	-- true or false indicates whether this branch has children; if not set, need to check with a search
+	-- indicates whether this branch has children; if not set, need to check with a search
 	? hasChildren: Boolean
 }
 // following was {parent: Node ?-* Branch} since branch is unique given treeId and nodeId
