@@ -103,6 +103,7 @@ entity Authority {
 // Hence synonyms have a source identifier and status, while
 // TaxonNames have references and other identifiers
 entity TaxonName(s) {
+    ? sourceIdentifier: Identifier
 }
 relate {TaxonName +<1 ScientificName}
 
@@ -111,12 +112,10 @@ entity SynonymicStatus(es)[:99] {
 }
 
 relate Synonym(s) {Taxon *<* TaxonName,
-	status: SynonymicStatus,
-	? sourceIdentifier: Identifier
+	status: SynonymicStatus
 }
 relate AcceptedName(s) {Taxon *<? TaxonName,
-	provisional: Boolean = false,
-	? sourceIdentifier: Identifier
+	provisional: Boolean = false
 }
 
 entity Habitat(s)[:65535] {
@@ -147,8 +146,7 @@ entity Reference(s) {
 }
 
 relate {Reference *>* TaxonCommonName}
-relate {Reference *>* Synonym}
-relate {Reference *>* Taxon}
+relate {Reference *>* TaxonName}
 
 entity Scrutiny/Scrutinies {
 	//= specialist : Specialist
