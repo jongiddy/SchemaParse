@@ -33,14 +33,26 @@ class XSDWriter {
 	case object XSDInteger extends XSDType {
 		override def toString = "integer"
 	}
-	case object XSDString extends XSDType {
+	case object XSDSignedLong extends XSDType {
+		override def toString = "long"
+	}
+	case object XSDSignedInt extends XSDType {
+		override def toString = "int"
+	}
+  case object XSDSignedShort extends XSDType {
+		override def toString = "short"
+	}
+  case object XSDSignedByte extends XSDType {
+		override def toString = "byte"
+	}
+  case object XSDString extends XSDType {
 		override def toString = "string"
 	}
 	case object XSDDate extends XSDType {
 		override def toString = "string"              // was date, changed to get things working with SCA
 	}                                               // use string, since dates are usually just for display
 	case object XSDDateTime extends XSDType {
-		override def toString = "integer"             // was datetime, changed to get things working with SCA
+		override def toString = "long"                // was datetime, changed to get things working with SCA
 	}                                               // use integer because datetimes are often for comparison
 	case object XSDBoolean extends XSDType {
 		override def toString = "boolean"
@@ -48,7 +60,12 @@ class XSDWriter {
 
 	object XSDType {
 		def apply(graphType: GraphType) : XSDType = {
+      def twoto(power: Int) = BigInt(2) << (power - 1)
 			graphType match {
+        case IntType(Some((min, max)), _) if min >= -twoto(8-1) && max < twoto(8-1) => XSDSignedByte
+        case IntType(Some((min, max)), _) if min >= -twoto(16-1) && max < twoto(16-1) => XSDSignedShort
+        case IntType(Some((min, max)), _) if min >= -twoto(32-1) && max < twoto(32-1) => XSDSignedInt
+        case IntType(Some((min, max)), _) if min >= -twoto(64-1) && max < twoto(64-1) => XSDSignedLong
 				case _ : IntType => XSDInteger
 				case SizedStringType(min, max) => XSDString
 				case UnsizedStringType => XSDString
@@ -120,16 +137,16 @@ class XSDWriter {
 			})
 		}
     def idType(tipo: EntityType): IdType = {
-      // any type which needs an id can often benefit from a listType to
-      // help in operations, for example, retrieval of all the x's
-      listType(tipo)
 			idTypes.getOrElseUpdate(tipo, {
 				val t = new IdType(Names(tipo.names.singular + "id", Some(tipo.names.singular + "ids")))
 				tipo.addAttribute(Attribute(new Name("id"), t, optional=true))
+        // any type which needs an id can often benefit from a listType to
+        // help in operations, for example, retrieval of all the x's
+        listType(tipo)
 				t
 			})
 		}
-		def handleContainedRelationship(containerRef: Endpoint, containedRef: Endpoint, orId: Boolean=false) = {
+		def handleContainedRelationship(containerRef: Endpoint, containedRef: Endpoint, part: Option[Endpoint]=None) = {
 			val containerType = entityTypes(containerRef.participant)
 			if (containerRef.participant == containedRef.participant) {
 				// different rules for circular references (entity contains instance(s) of itself)
@@ -145,36 +162,26 @@ class XSDWriter {
 						containerType.addElement(new EntityElement(containedRef.refName + "ids", seqType(idType(containedType))))
 				}
 			}
-			else {
-				val containedType = entityTypes(containedRef.participant)
-        if (orId) {
-          val addedType = orIdType(containedType)
-          containedRef.cardinality match {
-            case ZeroOrOne =>
-              containerType.addElement(new EntityElement(containedRef.refName + "orId", addedType, optional=true))
-            case One =>
-              containerType.addElement(new EntityElement(containedRef.refName + "orId", addedType))
-            case ZeroOrMore | OrderedZeroOrMore =>
-              containerType.addElement(new EntityElement(containedRef.refCollectionName + "orIds", seqType(addedType), optional=true))
-            case OneOrMore | OrderedOneOrMore =>
-              containerType.addElement(new EntityElement(containedRef.refCollectionName + "orIds", seqType(addedType)))
-          }
-        }
-        else {
-          containedRef.cardinality match {
-            case ZeroOrOne =>
-              containerType.addElement(new EntityElement(containedRef.refName, containedType, optional=true))
-            case One =>
-              containerType.addElement(new EntityElement(containedRef.refName, containedType))
-            case ZeroOrMore | OrderedZeroOrMore =>
-              containerType.addElement(new EntityElement(containedRef.refCollectionName, seqType(containedType), optional=true))
-            case OneOrMore | OrderedOneOrMore =>
-              containerType.addElement(new EntityElement(containedRef.refCollectionName, seqType(containedType)))
-          }
+      else {
+        val containedType = entityTypes(containedRef.participant)
+        containedRef.cardinality match {
+          case ZeroOrOne =>
+            containerType.addElement(new EntityElement(containedRef.refName, containedType, optional=true))
+          case One =>
+            containerType.addElement(new EntityElement(containedRef.refName, containedType))
+          case ZeroOrMore | OrderedZeroOrMore =>
+            containerType.addElement(new EntityElement(containedRef.refCollectionName, seqType(containedType), optional=true))
+          case OneOrMore | OrderedOneOrMore =>
+            containerType.addElement(new EntityElement(containedRef.refCollectionName, seqType(containedType)))
         }
 				containerRef.cardinality match {
 					case ZeroOrOne | One =>
-						containedType.addAttribute(Attribute(containerRef.refName + "id", idType(containerType), optional=true))
+            part match {
+              case None => containedType.addAttribute(Attribute(containerRef.refName + "id", idType(containerType), optional=true))
+              case Some(top) =>
+                val topType = entityTypes(top.participant)
+                containedType.addAttribute(Attribute(top.refName + "id", idType(topType), optional=true))
+            }
 					case _ =>
 				}
 			}
@@ -189,8 +196,8 @@ class XSDWriter {
 				case _ =>
 			}
 		}
-		def handleRelationship(r: Relationship) {
-			if (r.hasContainer) handleContainedRelationship(r.container, r.contained)
+		def handleRelationship(r: Relationship, part: Option[Endpoint]=None) {
+			if (r.hasContainer) handleContainedRelationship(r.container, r.contained, part)
 			else {
 				handlePeerRelationship(r.left, r.right)
 				handlePeerRelationship(r.right, r.left)
@@ -231,10 +238,10 @@ class XSDWriter {
 			val leftA = r.left.copy(cardinality = One)
 			val rightA = r.right.copy(participant=e)
 			println(leftA, rightA)
-			handleRelationship(new Relationship(leftA, rightA))
+			handleRelationship(new Relationship(leftA, rightA), if (r.left.contained) Some(r.right) else None)
 			val leftB = r.left.copy(participant=e)
 			val rightB = r.right.copy(cardinality = One)
-			handleRelationship(new Relationship(leftB, rightB))
+			handleRelationship(new Relationship(leftB, rightB), if (r.right.contained) Some(r.left) else None)
       if (r.hasContainer) {
         val containedType = entityTypes(r.contained.participant)
         idType(containedType) // ensure contained type has an id type
@@ -253,10 +260,11 @@ class XSDWriter {
       // as a final step, any relationship-entities that do not have an idType get one created here
       val r = e.relationship.get
       val tipo = entityTypes(e)
-			idTypes.getOrElseUpdate(tipo, {
+      idTypes.getOrElseUpdate(tipo, {
 		    val t = new IdType(Names(tipo.names.singular + "id", Some(tipo.names.singular + "ids")))
 			  t.addAttribute(new Attribute(r.left.refName + "id", idType(entityTypes(r.left.participant))))
 			  t.addAttribute(new Attribute(r.right.refName + "id", idType(entityTypes(r.right.participant))))
+        listType(tipo)
         t
 			})
     }
@@ -309,9 +317,11 @@ class XSDWriter {
     sb.append("<schema targetNamespace='" + targetNamespace + "'\n")
     sb.append("        xmlns='http://www.w3.org/2001/XMLSchema'\n")
     sb.append("        xmlns:tns='" + targetNamespace + "'\n")
+    sb.append("        xmlns:jaxb='http://java.sun.com/xml/ns/jaxb' jaxb:version='2.0'\n") // added to make JAXB create objects for SimpleTypes
     sb.append("        elementFormDefault='qualified'\n")
     sb.append("        attributeFormDefault='unqualified'>\n")
     indentLevel += 1
+    indent.append("<annotation><appinfo><jaxb:globalBindings mapSimpleTypeDef='true'/></appinfo></annotation>\n") // ditto
     val a = collection.mutable.ArrayBuffer.concat(entityTypes.values, seqTypes.values, listTypes.values,
       orIdTypes.values, idTypes.values).sortWith(
       (t1:UserType, t2:UserType) => t1.names.singular.lowerCase < t2.names.singular.lowerCase)
