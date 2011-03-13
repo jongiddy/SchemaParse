@@ -23,6 +23,7 @@ abstract class RelationalWriter {
 
   def formatComment(text: String) : String   /* abstract */
   def formatAutoIncrement: String
+  def formatTableSuffix: String
 
   trait DatabaseType
   def DatabaseType(graphType: GraphType) : DatabaseType
@@ -168,7 +169,12 @@ abstract class RelationalWriter {
 			for (keyFields <- indexKeys) {
 				out.write(sqlStyle(",\n  index (") + keyFields.map(_.nameAsString).mkString(", ") + ")")
 			}
-			out.write("\n)" + sqlStyle(" engine=") + "InnoDB" + sqlStyle(" charset=") + "utf8;")
+			out.write("\n)")
+      val suffix = formatTableSuffix
+      if (suffix.length > 0) {
+        out.write(" " + suffix)
+      }
+      out.write(";")
 		}
 	}
   def Table(participant: Participant, name: Name): Table

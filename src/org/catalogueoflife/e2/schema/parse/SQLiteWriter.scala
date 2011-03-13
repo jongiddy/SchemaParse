@@ -1,11 +1,10 @@
 package org.catalogueoflife.e2.schema.parse
 
-import java.io.Writer
-
 class SQLiteWriter extends RelationalWriter {
   def escapeIdentifier(word: String) = "`" + word + "`"
   def formatComment(text: String) = "/* " + text + " */"
   def formatAutoIncrement() = "/*" + sqlStyle("autoincrement") + "*/"
+  def formatTableSuffix = ""
 
 
   // SQLite type system is not really thi extensive, but these types

@@ -1,11 +1,10 @@
 package org.catalogueoflife.e2.schema.parse
 
-import java.io.Writer
-
 class MySQLWriter extends RelationalWriter {
   def escapeIdentifier(word: String) = "`" + word + "`"
   def formatComment(text: String) = sqlStyle("comment '") + text + "'"
   def formatAutoIncrement() = sqlStyle("auto_increment")
+  def formatTableSuffix() = sqlStyle(" engine=") + "InnoDB" + sqlStyle(" charset=") + "utf8"
 
 	// types are suitable for use with MySQL 5.0.3 and above
 	trait MySQLIntegralType extends DatabaseType
