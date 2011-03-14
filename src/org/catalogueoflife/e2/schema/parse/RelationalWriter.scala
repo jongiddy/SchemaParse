@@ -458,6 +458,7 @@ abstract class RelationalWriter {
 		for (p <- er) { // our previously created sub-list
 			val table = tables(p)
 			val r = p.relationship.get
+      // XXX need to check handled (but there may be a bug if this gets handled as a ?-1 key).
 			val containedField = createMapField(r.contained, r.container.cardinality, Restrict)
 			val containerField = createMapField(r.container, r.contained.cardinality, if (r.hasContainer) Cascade else Restrict)
 			table.addField(containerField)
@@ -474,7 +475,11 @@ abstract class RelationalWriter {
 		for (p <- graph.participants.values;
 			if p.properties.isEmpty && p.relationships.isEmpty
 		) {
-			handleSimpleRelationship(p.relationship.get)
+      val r = p.relationship.get
+      if (!handled(r)) {
+			  handleSimpleRelationship(p.relationship.get)
+        handled += r
+      }
 		}
 	}
 	def write(out: java.io.Writer) = {
