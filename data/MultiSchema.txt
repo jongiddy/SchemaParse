@@ -282,13 +282,12 @@ entity Distribution(s) {
 	summary: String[:64000]
 }
 relate {TaxonDetail +<? Distribution}
-relate {Distribution +<* RegionStatus}
-entity RegionStatus(es) {
-	status : String[1]
+relate TaxonRegion(s) {TaxonDetail *<* Region,
+    status: String[1]
 }
-relate {RegionStatus *<1 Region}
 entity Region/Regions {
-	code: String[:64]
+	code: String[:64],
+	name: String[:255]
 }
 relate {Region *<1 RegionStandard}
 entity RegionStandard(s)[:65535] {
@@ -296,7 +295,7 @@ entity RegionStandard(s)[:65535] {
 	? version: String[:64]
 }
 relate {
-	subregion(s) : Region *-? superregion(s) : Region
+	subRegion(s) : Region *-? superRegion(s) : Region
 }
 
 // Subgenus - supported in scientific_name_element
