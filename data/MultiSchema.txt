@@ -183,7 +183,7 @@ entity TaxonDetail(s) {
 relate {TaxonDetail ?>1 Taxon}
 
 entity TaxonomicRank(s)[:255] {
-	rank : String[:64],
+	= rank : String[:64],
 	//? markerDisplayed : String[:64], // not needed, we put the "var." in scientificNameElement prefix
 	standard : Integer[0..9] = 0
 }
