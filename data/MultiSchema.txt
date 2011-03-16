@@ -21,13 +21,13 @@ entity CommonName(s) {
 	? country: Country,
 	? language: Language
 }
-entity Country/Countries[:1024] {
+reference entity Country/Countries[:1024] {
 	-- ISO 3166-1-Alpha-2 code
 	= iso : String[2],
 	-- short name of the country in English
 	name : String[:255]
 }
-entity Language(s)[:65535] {
+reference entity Language(s)[:65535] {
 	= iso : String[3],
 	-- name of the language in English
 	name : String[:255]
@@ -107,7 +107,7 @@ entity TaxonName(s) {
 }
 relate {TaxonName +<1 ScientificName}
 
-entity SynonymicStatus(es)[:99] {
+reference entity SynonymicStatus(es)[:99] {
 	= nameStatus : String[:64]
 }
 
@@ -118,7 +118,7 @@ relate AcceptedName(s) {Taxon *<? TaxonName,
 	provisional: Boolean = false
 }
 
-entity Habitat(s)[:65535] {
+reference entity Habitat(s)[:65535] {
 	originalCode : String[:25],
 	name : String[:255]
 }
@@ -129,7 +129,7 @@ relate {
 
 // BS: Remove the uniqueness constraint on standard, the uniqueness should
 // be enforced over both fields
-entity HabitatStandard(s)[:255] {
+reference entity HabitatStandard(s)[:255] {
 	standard : String[:64],
 	? version : String[:10]
 }
@@ -182,7 +182,7 @@ entity TaxonDetail(s) {
 }
 relate {TaxonDetail ?>1 Taxon}
 
-entity TaxonomicRank(s)[:255] {
+reference entity TaxonomicRank(s)[:255] {
 	= rank : String[:64],
 	//? markerDisplayed : String[:64], // not needed, we put the "var." in scientificNameElement prefix
 	standard : Integer[0..9] = 0
@@ -193,7 +193,7 @@ entity DownloadLink(s) {
 	? description : String[:65535]
 }
 
-entity DownloadScheme(s)[:99] {
+reference entity DownloadScheme(s)[:99] {
 	scheme : String[:16],
 	name : String[:255]
 }
@@ -285,12 +285,12 @@ relate {TaxonDetail +<? Distribution}
 relate TaxonRegion(s) {TaxonDetail *<* Region,
     status: String[1]
 }
-entity Region/Regions {
+reference entity Region/Regions {
 	code: String[:64],
 	name: String[:255]
 }
 relate {Region *<1 RegionStandard}
-entity RegionStandard(s)[:65535] {
+reference entity RegionStandard(s)[:65535] {
 	standard: String[:255],
 	? version: String[:64]
 }

@@ -225,6 +225,7 @@ class XSDWriter {
 				}
 			}
 			entityTypes(e) = t
+      if (e.isReference) listType(t);
 		}
 		for (e <- er.participants.values;
 			if !(e.properties.isEmpty && e.relationships.isEmpty);

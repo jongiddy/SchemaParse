@@ -89,13 +89,16 @@ class SchemaParser(er: ERGraph) extends RegexParsers {
 		case name => er.name = Some(new Name(name))
 	}
   lazy val attribute = name | groupId | artifactId | version
-	lazy val entity: Parser[Participant] = ("entity" ~> label ~ (ssize?) ~ entityClause) ^^ {
-	    case (names ~ size ~ properties) => {
+	lazy val entity: Parser[Participant] = (("reference entity" | "entity") ~ label ~ (ssize?) ~ entityClause) ^^ {
+	    case (entity ~ names ~ size ~ properties) => {
 	    	val p = er.getParticipant(names.singular)
 	    	if (p.isDefined) throw new RuntimeException("Participant " + names.singular.original + "defined twice")
 	    	else p.isDefined = true
 	    	p.names = Some(names)
 	    	p.maxInstances = size.map(_._2)
+        if (entity == "reference entity") {
+          p.isReference = true
+        }
 	    	properties foreach {p.addProperty(_, er)}
 	    	p
 	    }

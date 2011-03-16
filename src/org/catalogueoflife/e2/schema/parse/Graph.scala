@@ -160,6 +160,7 @@ object Cardinality {
 // A relationship which exists as a separate entity is one that has properties or is an endpoint of a relationship
 class Participant(val id: Name) {
 	var isDefined = false
+  var isReference = false
 	var names: Option[Names] = None
 	override def toString = "Participant(" + id.original + ")"
 	// entity behaviours
