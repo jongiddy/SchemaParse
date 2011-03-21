@@ -319,11 +319,9 @@ class XSDWriter {
     sb.append("<schema targetNamespace='" + targetNamespace + "'\n")
     sb.append("        xmlns='http://www.w3.org/2001/XMLSchema'\n")
     sb.append("        xmlns:tns='" + targetNamespace + "'\n")
-    sb.append("        xmlns:jaxb='http://java.sun.com/xml/ns/jaxb' jaxb:version='2.0'\n") // added to make JAXB create objects for SimpleTypes
     sb.append("        elementFormDefault='qualified'\n")
     sb.append("        attributeFormDefault='unqualified'>\n")
     indentLevel += 1
-    indent.append("<annotation><appinfo><jaxb:globalBindings mapSimpleTypeDef='true'/></appinfo></annotation>\n") // ditto
     val a = collection.mutable.ArrayBuffer.concat(entityTypes.values, seqTypes.values, listTypes.values,
       orIdTypes.values, idTypes.values).sortWith(
       (t1:UserType, t2:UserType) => t1.names.singular.lowerCase < t2.names.singular.lowerCase)
