@@ -87,6 +87,7 @@ class XSDWriter {
 	class EntityType(names: Names) extends ComplexType(names) {
     var idOnlySupported = false
   }
+  class RootType(names: Names) extends ComplexType(names)
 	class SeqType(names: Names) extends ComplexType(names)
   class OrIdType(names: Names) extends ComplexType(names)
 	class IdType(names: Names) extends UserType(names)
@@ -100,7 +101,7 @@ class XSDWriter {
 
 	val entityTypes = new HashMap[Participant,EntityType]
 	val seqTypes = new HashMap[UserType,SeqType]
-  val listTypes = new HashMap[UserType,EntityType]
+  val listTypes = new HashMap[UserType,RootType]
   val orIdTypes = new HashMap[EntityType,OrIdType]
 	val idTypes = new HashMap[EntityType,IdType]
   var targetNamespace: String = "unknown"
@@ -119,9 +120,9 @@ class XSDWriter {
 				t
 			})
 		}
-    def listType(tipo: UserType): EntityType = {
+    def listType(tipo: UserType): RootType = {
 			listTypes.getOrElseUpdate(tipo, {
-				val t = new EntityType(Names(tipo.names.singular + "list", None))
+				val t = new RootType(Names(tipo.names.singular + "list", None))
         val seq = seqType(tipo)
 				t.addElement(new EntityElement(tipo.names.plural.getOrElse(seq.names.singular), seq, optional=true))
 				t
@@ -348,6 +349,26 @@ class XSDWriter {
 					appendAttributes(t.attributes.reverse)
 					indentLevel -= 1
 					indent.append("</complexType>\n")
+        case t : RootType =>
+          indent.append("<element name='").append(typeStyle(t.names.singular)).append("'>\n")
+          indentLevel += 1
+          indent.append("<complexType>\n")
+          indentLevel += 1
+          if (t.elements.size > 0) {
+            indent.append("<all>\n")
+            indentLevel += 1
+            appendElements(t.elements.reverse.filter(elem => !elem.optional).sortWith(
+                (elem1:Element, elem2:Element) => elem1.tipo.toString < elem2.tipo.toString))
+            appendElements(t.elements.reverse.filter(elem => elem.optional).sortWith(
+                (elem1:Element, elem2:Element) => elem1.tipo.toString < elem2.tipo.toString))
+            indentLevel -= 1
+            indent.append("</all>\n")
+          }
+          appendAttributes(t.attributes.reverse)
+          indentLevel -= 1
+          indent.append("</complexType>\n")
+          indentLevel -= 1
+          indent.append("</element>\n")
 				case t : SeqType =>
 					indent.append("<complexType name='").append(typeStyle(t.names.singular)).append("'>\n")
 					indentLevel += 1
