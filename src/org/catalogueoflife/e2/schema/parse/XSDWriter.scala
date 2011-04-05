@@ -1,6 +1,6 @@
 package org.catalogueoflife.e2.schema.parse
 
-import scala.collection.mutable.HashMap
+import scala.collection.mutable
 
 /*
  * For XSD, # is same as + and #? is same as *
@@ -99,11 +99,11 @@ class XSDWriter {
 		extends Element(name, tipo, false, true, description)
 	case class Attribute(name: Name, tipo: BaseType, optional: Boolean = false, default: Option[String] = None, description: String="")
 
-	val entityTypes = new HashMap[Participant,EntityType]
-	val seqTypes = new HashMap[UserType,SeqType]
-  val listTypes = new HashMap[UserType,RootType]
-  val orIdTypes = new HashMap[EntityType,OrIdType]
-	val idTypes = new HashMap[EntityType,IdType]
+	val entityTypes = new mutable.HashMap[Participant,EntityType]
+	val seqTypes = new mutable.HashMap[UserType,SeqType]
+  val listTypes = new mutable.HashMap[UserType,RootType]
+  val orIdTypes = new mutable.HashMap[EntityType,OrIdType]
+	val idTypes = new mutable.HashMap[EntityType,IdType]
   var targetNamespace: String = "unknown"
 
 	def analyse(er: ERGraph) = {
@@ -322,7 +322,7 @@ class XSDWriter {
     sb.append("        elementFormDefault='qualified'\n")
     sb.append("        attributeFormDefault='unqualified'>\n")
     indentLevel += 1
-    val a = collection.mutable.ArrayBuffer.concat(entityTypes.values, seqTypes.values, listTypes.values,
+    val a = mutable.ArrayBuffer.concat(entityTypes.values, seqTypes.values, listTypes.values,
       orIdTypes.values, idTypes.values).sortWith(
       (t1:UserType, t2:UserType) => t1.names.singular.lowerCase < t2.names.singular.lowerCase)
 

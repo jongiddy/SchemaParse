@@ -1,6 +1,6 @@
 package org.catalogueoflife.e2.schema.parse
 
-import scala.collection.mutable.Map
+import scala.collection.mutable
 
 
 trait GraphType
@@ -252,7 +252,7 @@ class ERGraph {
   var groupId: Option[String] = None
   var artifactId: Option[String] = None
   var version: Option[String] = None
-	var participants = Map[Name,Participant]()
+	var participants = mutable.Map[Name,Participant]()
 
 	var lock: AnyRef = new Object
 	var id: Int = 0

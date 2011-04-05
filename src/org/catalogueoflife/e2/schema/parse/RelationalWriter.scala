@@ -1,7 +1,7 @@
 package org.catalogueoflife.e2.schema.parse
 
 import java.io.Writer
-import scala.collection.mutable.HashMap
+import scala.collection.mutable
 
 abstract class RelationalWriter {
 
@@ -417,7 +417,7 @@ abstract class RelationalWriter {
 					handleSimpleRelationship(new Relationship(linkNext, linkPrev))
 			}
 	}
-	private val tables = new HashMap[Participant,Table]
+	private val tables = new mutable.HashMap[Participant,Table]
 		// Convert the E-R graph to a database schema, in several phases
 		// 1. merge non-circular 1-1 relationships, Car 1-1 Owner can be transformed to CarOwner
 		//    with original entity names prefixed to fields, e.g. fields car_name, owner_name
@@ -488,7 +488,7 @@ abstract class RelationalWriter {
 			table.fields.forall(field => (field.references.isEmpty || field.references.get._1 == table || seen(field.references.get._1)))
 		}
 		name.map(name => out.write("/*\n** " + name.titleText + "\n*/\n\n"))
-		val a = collection.mutable.ArrayBuffer.concat(tables.values).sortWith(
+		val a = mutable.ArrayBuffer.concat(tables.values).sortWith(
 				(t1:Table, t2:Table) => t1.name.lowerCase < t2.name.lowerCase)
 		while (!a.isEmpty) {
 			val idx = a.indexWhere(allReferencesSeen(_))
