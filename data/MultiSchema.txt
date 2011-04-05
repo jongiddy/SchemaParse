@@ -73,6 +73,7 @@ entity ScientificName(s) {
 	? parsedName: ParsedName
 }
 entity ParsedName(s) {
+    ? authority: String[:255]
 }
 
 // - parsedName, which points to the lowest-ranked element of the
@@ -92,12 +93,12 @@ entity ScientificNameElement(s) {
 
 relate {ParsedName +<# ScientificNameElement}
 
-relate {ParsedName *<? basionymAuthor(s): Authority}
-relate {ParsedName *<? constructionAuthor(s): Authority}
-entity Authority {
-	author: String[:255],
-	? year: String[:16]
-}
+//relate {ParsedName *<? basionymAuthor(s): Authority}
+//relate {ParsedName *<? constructionAuthor(s): Authority}
+//entity Authority {
+//	author: String[:255],
+//	? year: String[:16]
+//}
 
 // A TaxonName is a general concept whereas a Synonym is identified with a consensus (from a GSD).
 // Hence synonyms have a source identifier and status, while
