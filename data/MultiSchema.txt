@@ -100,23 +100,16 @@ relate {ParsedName +<# ScientificNameElement}
 //	? year: String[:16]
 //}
 
-// A TaxonName is a general concept whereas a Synonym is identified with a consensus (from a GSD).
-// Hence synonyms have a source identifier and status, while
-// TaxonNames have references and other identifiers
-entity TaxonName(s) {
-    ? sourceIdentifier: Identifier
+entity TaxonScientificName(s) {
+    ? sourceIdentifier: Identifier,
+    status: ScientificNameStatus,
+    acceptedName: Boolean
 }
-relate {TaxonName +<1 ScientificName}
+relate {TaxonScientificName +<1 ScientificName}
+relate {Taxon 1<* TaxonScientificName}
 
-reference entity SynonymicStatus(es)[:99] {
+reference entity ScientificNameStatus(es)[:99] {
 	= nameStatus : String[:64]
-}
-
-relate Synonym(s) {Taxon *<* TaxonName,
-	status: SynonymicStatus
-}
-relate AcceptedName(s) {Taxon *<? TaxonName,
-	provisional: Boolean = false
 }
 
 reference entity Habitat(s)[:65535] {
@@ -147,7 +140,7 @@ entity Reference(s) {
 }
 
 relate {Reference *>* TaxonCommonName}
-relate {Reference *>* TaxonName}
+relate {Reference *>* TaxonScientificName}
 
 entity Scrutiny/Scrutinies {
 	//= specialist : Specialist
@@ -304,6 +297,6 @@ relate {
 // Unique identifiers
 //relate {Taxon *<? sourceIdentifier: Identifier}
 //relate {Synonym *<* sourceIdentifier(s): Identifier}
-relate {TaxonName *<* Identifier}
+relate {TaxonScientificName *<* Identifier}
 
 
