@@ -1,5 +1,7 @@
 package org.catalogueoflife.e2.schema.parse
 
+import java.io.Writer
+
 class SQLiteWriter extends RelationalWriter {
   def escapeIdentifier(word: String) = "`" + word + "`"
   def formatComment(text: String) = "/* " + text + " */"
@@ -132,6 +134,39 @@ class SQLiteWriter extends RelationalWriter {
       case _ =>
     }
     def dedicatedKeyType = SQLiteAutoIncrementInteger
+    override def write(out: Writer) = {
+			// the fields are created in reverse order, then relationships are added to the head
+			// we reverse the list of fields in order to make the table define fields in order
+			val ordered = doOrdering(fields, Array[List[Field]](Nil,Nil,Nil,Nil))
+			out.write(sqlStyle("create table ") + nameAsString + " (")
+			var first = true
+			for (fields <- ordered;
+				field <- fields
+			) {
+				if (first) {
+					first = false
+					out.write("\n  ")
+				}
+				else out.write(",\n  ")
+				field.write(out)
+			}
+			if (! key.isEmpty) {
+				out.write(sqlStyle(",\n  primary key ") + keyAsText)
+			}
+			for (keyFields <- uniqueKeys) {
+				out.write(sqlStyle(",\n  unique (") + keyFields.map(_.nameAsString).mkString(", ") + ")")
+			}
+			out.write("\n)")
+      val suffix = formatTableSuffix
+      if (suffix.length > 0) {
+        out.write(" " + suffix)
+      }
+      out.write(";")
+			for (keyFields <- indexKeys) {
+				out.write(sqlStyle("\ncreate index ") + tableNameStyle(name) + "_" + keyFields.map(field => fieldNameStyle(field.name)).mkString("_") + sqlStyle(" on ") +
+          nameAsString + " (" + keyFields.map(_.nameAsString).mkString(", ") + ");")
+			}
+		}
   }
   def Table(participant: Participant, name: Name) = new Table(participant, name)
 }
