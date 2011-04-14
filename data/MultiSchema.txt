@@ -23,7 +23,7 @@ entity CommonName(s) {
 }
 reference entity Country/Countries[:1024] {
 	-- ISO 3166-1-Alpha-2 code
-	= iso : String[2],
+	= iso : String[3],
 	-- short name of the country in English
 	name : String[:255]
 }
