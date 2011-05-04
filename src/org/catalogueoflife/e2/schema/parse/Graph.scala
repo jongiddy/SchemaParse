@@ -25,7 +25,7 @@ case class IntType(minMax: Option[(BigInt, BigInt)], default: Option[BigInt] = N
 				case None => ""
 				case Some((min, max)) => "[" + min + ".." + max + "]"
 			}
-		) + default.map{"=" + _}
+		) + default.map{"=" + _}.getOrElse("")
 	}
 }
 case object CalendarType extends GraphType {

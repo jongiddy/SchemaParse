@@ -31,7 +31,7 @@ class DOTWriter {
 			indent.append("\"").append(e.names.get.singular.pascalCase).append("\" [\n")
 			indentLevel +=1
 			indent.append("label=\"").append(entityNameStyle(e.names.get.singular))
-			e.properties foreach {p =>
+			e.properties.reverse foreach {p =>
 				sb.append("|")
 				if (p.optional) sb.append("? ")
 				else if (p.unique) sb.append("= ")
